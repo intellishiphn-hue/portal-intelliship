@@ -376,7 +376,7 @@ function deduplicateF(existing, newRows){
 
 // ════════════════ COMERCIAL ════════════════
 
-const MO=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const MO_C=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const AGC={
   'INTELLISHIP HN':'#0ea5e9','LOGISTEX':'#f97316','CONNECT':'#a855f7',
   'GLOBEXHN':'#22c55e','ENCARGHO':'#f59e0b','ABBA':'#ec4899',
@@ -547,7 +547,7 @@ function renderOverview_c(){
       <div class="chart-title">Peso por mes (últimos 6 meses)</div>
       <canvas id="cv-overview" height="180"></canvas>
     </div>`;
-  drawBarChartC('cv-overview', months.map(([k])=>{const[y,m]=k.split('-');return MO[parseInt(m)-1]+' '+y.slice(2);}), months.map(([,v])=>v.peso), '#0ea5e9');
+  drawBarChartC('cv-overview', months.map(([k])=>{const[y,m]=k.split('-');return MO_C[parseInt(m)-1]+' '+y.slice(2);}), months.map(([,v])=>v.peso), '#0ea5e9');
 }
 
 // ── TRENDS ────────────────────────────────────────────────────────────────────
@@ -856,7 +856,7 @@ async function initComercial(){
 const COSTO_LB_USD = {AEREO:2.50, MARITIMO:1.75, EXPRESS:6.50};
 const SEGURO_POR_FACTURA = 20;   // L — ganancia pura, sin costo
 const COSTO_DELIVERY_LPS  = 65;  // L — costo fijo por entrega a domicilio
-const MO = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const MO_F = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const SVC_COLORS = {AEREO:'#0ea5e9', MARITIMO:'#22c55e', EXPRESS:'#f97316'};
 let RAW=[], CHS={};
 
@@ -1022,7 +1022,7 @@ function computeF(rows){
     if(r.cobrado) byMonth[k].cobrado+=r.total;
     if(r.pendiente) byMonth[k].pendiente+=r.total;
   });
-  const monthly=Object.values(byMonth).sort((a,b)=>a.y-b.y||a.m-b.m).map(r=>({...r,label:`${MO[r.m]} ${r.y}`}));
+  const monthly=Object.values(byMonth).sort((a,b)=>a.y-b.y||a.m-b.m).map(r=>({...r,label:`${MO_F[r.m]} ${r.y}`}));
 
   // Pending sorted
   const topPending=[...pendientes].sort((a,b)=>b.total-a.total).slice(0,100);
@@ -1171,7 +1171,7 @@ function renderSVF({byService,data}){
     monthSvc[k][r.svc].rev+=r.rev_total; monthSvc[k][r.svc].profit+=r.profit_total;
   });
   const ms=Object.values(monthSvc).sort((a,b)=>a.y-b.y||a.m-b.m);
-  const ml=ms.map(r=>`${MO[r.m]} ${r.y}`);
+  const ml=ms.map(r=>`${MO_F[r.m]} ${r.y}`);
 
   h+=`<div class="card"><div class="card-title">📈 Revenue Mensual por Servicio</div><div style="position:relative;height:240px"><canvas id="c-sv-rev"></canvas></div></div>`;
   h+=`<div class="card"><div class="card-title">💸 Profit Mensual por Servicio</div><div style="position:relative;height:220px"><canvas id="c-sv-prf"></canvas></div></div>`;
