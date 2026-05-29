@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>INTELLISHIP — Portal de Inteligencia</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+/* ── BASE ── */
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#060d1a;color:#f1f5f9;font-family:'DM Sans','Segoe UI',sans-serif;min-height:100vh}
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:#0a1628}::-webkit-scrollbar-thumb{background:#1e3a5f;border-radius:3px}
+select,input,button{font-family:'DM Sans','Segoe UI',sans-serif}
+select option{background:#0a1628}
+
+/* ── LOGIN ── */
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+.login-box{background:#0a1628;border:1px solid #1e3a5f;border-radius:24px;padding:48px 40px;width:min(420px,100%);text-align:center;}
+.login-logo{font-size:11px;letter-spacing:3px;color:#0ea5e9;font-weight:700;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:6px;}
+.login-dot{width:7px;height:7px;border-radius:50%;background:#0ea5e9;box-shadow:0 0 8px #0ea5e9;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.login-title{font-size:22px;font-weight:700;margin-bottom:6px;}
+.login-sub{font-size:13px;color:#475569;margin-bottom:32px;}
+.login-input{width:100%;background:#060d1a;border:1px solid #1e3a5f;color:#f1f5f9;border-radius:10px;padding:12px 16px;font-size:14px;outline:none;margin-bottom:12px;transition:border .2s;}
+.login-input:focus{border-color:#0ea5e9;}
+.login-err{font-size:12px;color:#ef4444;margin-bottom:12px;min-height:18px;}
+.login-btn{width:100%;background:#0ea5e9;color:#fff;border:none;border-radius:10px;padding:12px;font-size:15px;font-weight:600;cursor:pointer;transition:background .2s;}
+.login-btn:hover{background:#38bdf8;}
+
+/* ── PORTAL SELECTOR ── */
+#portal-select{min-height:100vh;display:none;align-items:center;justify-content:center;padding:24px;}
+.portal-box{text-align:center;max-width:600px;width:100%;}
+.portal-title{font-size:24px;font-weight:700;margin-bottom:8px;}
+.portal-sub{font-size:13px;color:#475569;margin-bottom:40px;}
+.portal-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;}
+.portal-card{background:#0a1628;border:1px solid #1e3a5f;border-radius:20px;padding:32px 24px;cursor:pointer;transition:all .2s;text-align:center;}
+.portal-card:hover{border-color:#0ea5e9;transform:translateY(-3px);box-shadow:0 8px 30px rgba(14,165,233,.15);}
+.portal-card-icon{font-size:40px;margin-bottom:14px;}
+.portal-card-title{font-size:17px;font-weight:700;margin-bottom:6px;}
+.portal-card-desc{font-size:12px;color:#475569;line-height:1.6;}
+.portal-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 10px;border-radius:20px;margin-top:10px;}
+.logout-btn{margin-top:32px;background:transparent;border:1px solid #1e3a5f;color:#475569;border-radius:8px;padding:8px 20px;font-size:12px;cursor:pointer;}
+.logout-btn:hover{border-color:#ef4444;color:#ef4444;}
+
+/* ── PORTAL WRAPPER ── */
+#portal-comercial, #portal-financiero{display:none;}
+.back-bar{background:#0a1628;border-bottom:1px solid #0f2040;padding:8px 20px;display:flex;align-items:center;gap:10px;}
+.back-btn{background:transparent;border:1px solid #1e3a5f;color:#94a3b8;border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;}
+.back-btn:hover{border-color:#0ea5e9;color:#0ea5e9;}
+
+/* ── SHARED UI ── */
+.dot{width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px #22c55e;display:inline-block;margin-right:7px}
+.brand{font-size:10px;letter-spacing:3px;color:#22c55e;font-weight:600;text-transform:uppercase}
+.ctrl{background:#0a1628;border:1px solid #1e293b;color:#f1f5f9;border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer}
+.ctrl-date{background:#0a1628;border:1px solid #1e293b;border-radius:8px;padding:4px 10px;display:flex;align-items:center;gap:5px;font-size:11px;color:#475569}
+.ctrl-date input{background:transparent;border:none;color:#f1f5f9;font-size:11px;outline:none;width:110px}
+.tasa-box{background:#0a1628;border:1px solid #f59e0b40;border-radius:8px;padding:4px 10px;display:flex;align-items:center;gap:6px;font-size:11px;color:#f59e0b}
+.tasa-box input{background:transparent;border:none;color:#fbbf24;font-size:12px;font-weight:700;outline:none;width:50px;text-align:right}
+.tabs{display:flex;gap:2px;padding:10px 28px 0;border-bottom:1px solid #0f2040;overflow-x:auto}
+.tab{padding:7px 16px;border-radius:8px 8px 0 0;border:none;background:transparent;color:#475569;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.tab.active{background:#0a1628;color:#22c55e;border-bottom:2px solid #22c55e}
+.content{padding:18px 28px}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:10px;margin-bottom:16px}
+.kpi{background:#0a1628;border-radius:12px;padding:14px 16px}
+.kpi-val{font-size:19px;font-weight:700;margin-bottom:2px}
+.kpi-lbl{font-size:10px;color:#475569;margin-bottom:5px}
+.kpi-sub{font-size:10px;color:#334155}
+.card{background:#0a1628;border:1px solid #0f2040;border-radius:14px;padding:16px;margin-bottom:14px}
+.card-title{font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:12px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px}
+table{width:100%;border-collapse:collapse}
+th{padding:9px 12px;text-align:left;font-size:10px;color:#475569;font-weight:600;white-space:nowrap;border-bottom:1px solid #0f2040}
+td{padding:7px 12px;border-bottom:1px solid #060d1a;font-size:11px}
+tr:nth-child(even) td{background:#070f1e}
+tr:hover td{background:#0f2040!important}
+.badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.wa{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;background:#052e16;border:1px solid #16a34a40;border-radius:6px;color:#4ade80;font-size:10px;font-weight:600;text-decoration:none}
+.upload-screen{min-height:calc(100vh - 40px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center}
+.upload-box{border:2px dashed #1e3a5f;border-radius:16px;padding:48px 64px;cursor:pointer;background:#0a1628;transition:border-color .2s;display:block;margin-top:24px}
+.upload-box:hover{border-color:#22c55e}
+.pbar{height:4px;background:#0f2040;border-radius:4px;overflow:hidden;margin-top:10px;display:none}
+.pfill{height:100%;background:#22c55e;border-radius:4px;transition:width .3s}
+/* Firebase status */
+.fb-status{display:flex;align-items:center;gap:6px;font-size:11px;color:#475569;padding:4px 10px;background:#0a1628;border:1px solid #1e293b;border-radius:8px;}
+.fb-dot{width:6px;height:6px;border-radius:50%;background:#6b7280;}
+.fb-dot.ok{background:#22c55e;box-shadow:0 0 6px #22c55e;}
+.fb-dot.loading{background:#f59e0b;animation:pulse 1s infinite;}
+/* Add data btn */
+.add-btn{background:#0ea5e920;border:1px solid #0ea5e940;color:#0ea5e9;border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer;font-weight:600;}
+.add-btn:hover{background:#0ea5e940;}
+/* Comercial styles */
+:root{--bg:#060d1a;--bg2:#0a1628;--bg3:#0f2040;--bg4:#1e3a5f;--acc:#0ea5e9;--acc2:#38bdf8;--txt:#f1f5f9;--txt2:#94a3b8;--txt3:#475569;--red:#ef4444;--grn:#22c55e;--ylw:#f59e0b;--pur:#a855f7;--ora:#f97316;--border:#0f2040;}
+.header{border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;background:var(--bg);}
+.header h1{font-size:16px;font-weight:700;color:var(--txt);}
+.controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.btn-reset{background:transparent;border:1px solid var(--bg4);color:var(--txt3);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;}
+.btn-reset:hover{border-color:var(--red);color:var(--red);}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:20px;}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;}
+.kpi-lbl{font-size:11px;color:var(--txt3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;}
+.kpi-val{font-size:24px;font-weight:700;margin-bottom:2px;}
+.kpi-sub{font-size:11px;color:var(--txt3);}
+.chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:14px;}
+.chart-title{font-size:13px;font-weight:600;color:var(--txt2);margin-bottom:14px;}
+.cl-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);margin-bottom:6px;flex-wrap:wrap;}
+.fbtn{background:var(--bg3);border:1px solid var(--bg4);color:var(--txt2);border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer;}
+.fbtn.active{background:var(--acc);color:#fff;border-color:var(--acc);}
+.search-input{background:var(--bg2);border:1px solid var(--bg4);color:var(--txt);border-radius:8px;padding:6px 12px;font-size:12px;outline:none;width:220px;}
+.export-btn{background:var(--bg3);border:1px solid var(--bg4);color:var(--txt2);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;}
+.export-btn:hover{border-color:var(--grn);color:var(--grn);}
+.wa-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:#052e16;border:1px solid #16a34a40;border-radius:6px;color:#4ade80;font-size:11px;font-weight:600;text-decoration:none;}
+.rec{padding:14px 18px;border-radius:12px;border-left:3px solid;margin-bottom:10px;}
+.rec.success{background:#052e1640;border-color:#22c55e;}
+.rec.warning{background:#451a0340;border-color:#f59e0b;}
+.rec.danger{background:#450a0a40;border-color:#ef4444;}
+.rec.info{background:#0c234040;border-color:#0ea5e9;}
+.rec-title{font-size:13px;font-weight:600;margin-bottom:4px;}
+.rec-body{font-size:12px;color:var(--txt3);}
+.progress-bar{background:var(--bg3);border-radius:8px;height:6px;margin-top:14px;overflow:hidden;display:none;}
+.progress-fill{background:var(--acc);height:100%;transition:width .3s;}
+</style>
+</head>
+<body>
+
+<!-- ════════════════ LOGIN ════════════════ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo"><span class="login-dot"></span>INTELLISHIP Honduras</div>
+    <div class="login-title">Portal de Inteligencia</div>
+    <div class="login-sub">Acceso restringido — ingresa tu contraseña</div>
+    <input type="password" class="login-input" id="login-pass" placeholder="Contraseña" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <div class="login-err" id="login-err"></div>
+    <button class="login-btn" onclick="doLogin()">Ingresar</button>
+  </div>
+</div>
+
+<!-- ════════════════ PORTAL SELECTOR ════════════════ -->
+<div id="portal-select" style="display:none;min-height:100vh;align-items:center;justify-content:center;padding:24px;">
+  <div class="portal-box" style="text-align:center;max-width:600px;width:100%;">
+    <div style="font-size:11px;letter-spacing:3px;color:#0ea5e9;font-weight:700;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:6px;"><span class="login-dot"></span>INTELLISHIP Honduras</div>
+    <div style="font-size:24px;font-weight:700;margin-bottom:8px;">Panel de Inteligencia</div>
+    <div style="font-size:13px;color:#475569;margin-bottom:40px;">Selecciona el módulo que deseas consultar</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;">
+      <div onclick="openPortal('comercial')" style="background:#0a1628;border:1px solid #1e3a5f;border-radius:20px;padding:32px 24px;cursor:pointer;transition:all .2s;text-align:center;" onmouseover="this.style.borderColor='#0ea5e9';this.style.transform='translateY(-3px)'" onmouseout="this.style.borderColor='#1e3a5f';this.style.transform='none'">
+        <div style="font-size:40px;margin-bottom:14px;">📦</div>
+        <div style="font-size:17px;font-weight:700;margin-bottom:6px;">Inteligencia Comercial</div>
+        <div style="font-size:12px;color:#475569;line-height:1.6;">Libras, paquetes, clientes activos, tendencias por agencia y servicio.</div>
+        <span style="display:inline-block;font-size:10px;font-weight:700;padding:3px 12px;border-radius:20px;margin-top:12px;background:#0c2340;color:#0ea5e9;">Manager Cargo · Excel</span>
+      </div>
+      <div onclick="openPortal('financiero')" style="background:#0a1628;border:1px solid #1e3a5f;border-radius:20px;padding:32px 24px;cursor:pointer;transition:all .2s;text-align:center;" onmouseover="this.style.borderColor='#22c55e';this.style.transform='translateY(-3px)'" onmouseout="this.style.borderColor='#1e3a5f';this.style.transform='none'">
+        <div style="font-size:40px;margin-bottom:14px;">💰</div>
+        <div style="font-size:17px;font-weight:700;margin-bottom:6px;">Dashboard Financiero</div>
+        <div style="font-size:12px;color:#475569;line-height:1.6;">Revenue, profit, P&L mensual, pendientes de cobro y clientes.</div>
+        <span style="display:inline-block;font-size:10px;font-weight:700;padding:3px 12px;border-radius:20px;margin-top:12px;background:#052e16;color:#22c55e;">CSV Financiero · Excel</span>
+      </div>
+    </div>
+    <button onclick="doLogout()" style="margin-top:32px;background:transparent;border:1px solid #1e3a5f;color:#475569;border-radius:8px;padding:8px 20px;font-size:12px;cursor:pointer;" onmouseover="this.style.borderColor='#ef4444';this.style.color='#ef4444'" onmouseout="this.style.borderColor='#1e3a5f';this.style.color='#475569'">Cerrar sesión</button>
+  </div>
+</div>
+
+<!-- ════════════════ PORTAL COMERCIAL ════════════════ -->
+<div id="portal-comercial" style="display:none;">
+  <div class="back-bar">
+    <button class="back-btn" onclick="goBack()">← Volver</button>
+    <span style="font-size:12px;color:#475569;">Inteligencia Comercial</span>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+      <div class="fb-status"><span class="fb-dot" id="fb-dot-c"></span><span id="fb-txt-c">Cargando...</span></div>
+    </div>
+  </div>
+
+  <div id="upload-screen-c">
+    <div style="text-align:center;margin-bottom:28px">
+      <div class="brand" style="color:#0ea5e9;justify-content:center;display:flex;align-items:center;"><span style="width:7px;height:7px;border-radius:50%;background:#0ea5e9;display:inline-block;margin-right:7px;"></span>INTELLISHIP Honduras</div>
+      <h1 style="font-size:26px;font-weight:700;margin-top:8px">Panel de Inteligencia Comercial</h1>
+      <p style="color:#475569;font-size:13px;margin-top:6px" id="c-upload-msg">Sube el Excel de Manager Cargo para comenzar</p>
+    </div>
+    <label class="upload-box" id="upload-label-c">
+      <input type="file" id="file-input-c" accept=".xlsx,.xls" style="display:none"/>
+      <div style="font-size:44px;margin-bottom:14px">📂</div>
+      <div style="color:#0ea5e9;font-weight:600;font-size:15px;margin-bottom:4px" id="c-upload-title">Arrastra el archivo aquí</div>
+      <div style="color:#334155;font-size:12px">o haz click para seleccionar el .xlsx</div>
+      <div id="upload-status-c" style="color:#0ea5e9;font-size:13px;margin-top:14px;min-height:20px"></div>
+      <div class="progress-bar" id="progress-bar-c"><div class="progress-fill" id="progress-fill-c" style="width:0%"></div></div>
+    </label>
+    <div style="margin-top:14px;color:#1e3a5f;font-size:11px">Bodega → Exportar masivamente Excel → Manager Cargo</div>
+  </div>
+
+  <div id="dashboard-c" style="display:none;">
+    <div class="header">
+      <div>
+        <div class="brand" style="color:#0ea5e9;display:flex;align-items:center;"><span style="width:7px;height:7px;border-radius:50%;background:#0ea5e9;display:inline-block;margin-right:7px;animation:pulse 2s infinite;"></span>INTELLISHIP Honduras</div>
+        <h1>Panel de Inteligencia Comercial</h1>
+      </div>
+      <div class="controls">
+        <div class="ctrl-date"><span>Del</span><input type="date" id="date-from-c" onchange="applyFiltersC()"/><span>al</span><input type="date" id="date-to-c" onchange="applyFiltersC()"/></div>
+        <select class="ctrl" id="agency-filter-c" onchange="applyFiltersC()"></select>
+        <select class="ctrl" id="svc-filter-c" onchange="applyFiltersC()"></select>
+        <button class="add-btn" onclick="document.getElementById('file-input-c').click()">+ Agregar datos</button>
+        <button class="btn-reset" onclick="resetDataC()">↩ Limpiar</button>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" onclick="showTabC('overview',this)">📊 Resumen</button>
+      <button class="tab" onclick="showTabC('trends',this)">📈 Tendencias</button>
+      <button class="tab" onclick="showTabC('agencies',this)">🏢 Agencias</button>
+      <button class="tab" onclick="showTabC('clients',this)">👥 Clientes</button>
+      <button class="tab" onclick="showTabC('recs',this)">💡 Insights</button>
+    </div>
+    <div class="content">
+      <div id="tab-overview-c"></div>
+      <div id="tab-trends-c" style="display:none"></div>
+      <div id="tab-agencies-c" style="display:none"></div>
+      <div id="tab-clients-c" style="display:none"></div>
+      <div id="tab-recs-c" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ PORTAL FINANCIERO ════════════════ -->
+<div id="portal-financiero" style="display:none;">
+  <div class="back-bar">
+    <button class="back-btn" onclick="goBack()">← Volver</button>
+    <span style="font-size:12px;color:#475569;">Dashboard Financiero</span>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+      <div class="fb-status"><span class="fb-dot" id="fb-dot-f"></span><span id="fb-txt-f">Cargando...</span></div>
+    </div>
+  </div>
+
+  <div id="up-f" class="upload-screen">
+    <div><span class="dot"></span><span class="brand">INTELLISHIP Honduras — Financiero</span></div>
+    <h1 style="font-size:26px;font-weight:700;margin-top:8px">Dashboard Financiero</h1>
+    <p style="color:#475569;font-size:13px;margin-top:6px" id="f-upload-msg">Sube el CSV generado por el descargador financiero</p>
+    <label class="upload-box" id="ulabel-f">
+      <input type="file" id="finput-f" accept=".csv,.xlsx" style="display:none"/>
+      <div style="font-size:44px;margin-bottom:14px">💰</div>
+      <div style="color:#22c55e;font-weight:600;font-size:15px;margin-bottom:4px" id="f-upload-title">Arrastra intelliship_financiero.csv aquí</div>
+      <div style="color:#334155;font-size:12px">o haz click para seleccionarlo · también acepta .xlsx</div>
+      <div id="ustatus-f" style="color:#22c55e;font-size:13px;margin-top:12px;min-height:20px"></div>
+      <div class="pbar" id="pbar-f"><div class="pfill" id="pfill-f" style="width:0%"></div></div>
+    </label>
+    <div style="margin-top:14px;color:#1e3a5f;font-size:11px">Courier → Reporte diario → AEREO + MARITIMO + EXPRESS combinados</div>
+  </div>
+
+  <div id="dash-f" style="display:none">
+    <div class="hdr" style="border-bottom:1px solid #0f2040;padding:14px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+      <div>
+        <div><span class="dot"></span><span class="brand">INTELLISHIP Honduras</span></div>
+        <h1 style="font-size:18px;font-weight:700;margin-top:3px">Dashboard Financiero</h1>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <div class="tasa-box">💱 L/<span style="color:#94a3b8">$</span><input type="number" id="tasa-f" value="26.65" step="0.05" onchange="applyFF()" style="width:55px"/></div>
+        <div class="ctrl-date"><span>Del</span><input type="date" id="dfrom-f" onchange="applyFF()"/><span>al</span><input type="date" id="dto-f" onchange="applyFF()"/></div>
+        <select class="ctrl" id="svcf-f" onchange="applyFF()">
+          <option value="TODOS">Todos los servicios</option>
+          <option value="AEREO">AEREO</option>
+          <option value="MARITIMO">MARITIMO</option>
+          <option value="EXPRESS">EXPRESS</option>
+        </select>
+        <select class="ctrl" id="pagof-f" onchange="applyFF()">
+          <option value="TODOS">Todos los pagos</option>
+          <option value="PRE-PAGADO">PRE-PAGADO (Cobrado)</option>
+          <option value="C.O.D">C.O.D (Pendiente)</option>
+        </select>
+        <button class="add-btn" onclick="document.getElementById('finput-f').click()">+ Agregar datos</button>
+        <button class="ctrl" onclick="resetDF()">↩ Limpiar</button>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" onclick="showTabF('ov',this)">💰 Resumen</button>
+      <button class="tab" onclick="showTabF('sv',this)">📊 Por Servicio</button>
+      <button class="tab" onclick="showTabF('pending',this)">⏳ Pendientes</button>
+      <button class="tab" onclick="showTabF('clients',this)">👥 Clientes</button>
+      <button class="tab" onclick="showTabF('trend',this)">📈 Tendencia</button>
+      <button class="tab" onclick="showTabF('pl',this)">🧾 P&L Mensual</button>
+    </div>
+    <div class="content">
+      <div id="tab-ov-f"></div>
+      <div id="tab-sv-f" style="display:none"></div>
+      <div id="tab-pending-f" style="display:none"></div>
+      <div id="tab-clients-f" style="display:none"></div>
+      <div id="tab-trend-f" style="display:none"></div>
+      <div id="tab-pl-f" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════ AUTH & NAVIGATION ════════════════
+const PASS = '@Tamu.edu123';
+const FB_URL_C = 'https://rrhh-intelliship-default-rtdb.firebaseio.com/comercial';
+const FB_URL_F = 'https://rrhh-intelliship-default-rtdb.firebaseio.com/financiero';
+
+function doLogin(){
+  const v = document.getElementById('login-pass').value;
+  if(v === PASS){
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('portal-select').style.display = 'flex';
+  } else {
+    document.getElementById('login-err').textContent = 'Contraseña incorrecta.';
+  }
+}
+document.getElementById('login-pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+function doLogout(){
+  document.getElementById('portal-select').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-pass').value = '';
+}
+
+function openPortal(which){
+  document.getElementById('portal-select').style.display = 'none';
+  if(which === 'comercial'){
+    document.getElementById('portal-comercial').style.display = 'block';
+    initComercial();
+  } else {
+    document.getElementById('portal-financiero').style.display = 'block';
+    initFinanciero();
+  }
+}
+
+function goBack(){
+  document.getElementById('portal-comercial').style.display = 'none';
+  document.getElementById('portal-financiero').style.display = 'none';
+  document.getElementById('portal-select').style.display = 'flex';
+}
+
+// ════════════════ FIREBASE HELPERS ════════════════
+async function fbLoad(url, dotId, txtId){
+  setFbStatus(dotId, txtId, 'loading', 'Cargando...');
+  try{
+    const r = await fetch(url + '.json');
+    if(!r.ok){ setFbStatus(dotId, txtId, 'error', 'Sin conexión'); return null; }
+    const data = await r.json();
+    if(!data || !data.rows || !data.rows.length){ setFbStatus(dotId, txtId, 'empty', 'Sin datos'); return null; }
+    setFbStatus(dotId, txtId, 'ok', `${data.rows.length.toLocaleString('es-HN')} registros · Firebase`);
+    return data.rows;
+  }catch(e){ setFbStatus(dotId, txtId, 'error', 'Error de conexión'); return null; }
+}
+
+async function fbSave(url, rows, dotId, txtId){
+  try{
+    await fetch(url + '.json', {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({rows, updated: new Date().toISOString()})
+    });
+    setFbStatus(dotId, txtId, 'ok', `${rows.length.toLocaleString('es-HN')} registros · Guardado`);
+  }catch(e){ setFbStatus(dotId, txtId, 'error', 'Error al guardar'); }
+}
+
+function setFbStatus(dotId, txtId, status, msg){
+  const dot = document.getElementById(dotId);
+  const txt = document.getElementById(txtId);
+  if(!dot || !txt) return;
+  dot.className = 'fb-dot' + (status==='ok'?' ok':status==='loading'?' loading':'');
+  txt.textContent = msg;
+}
+
+// Deduplicar por fecha+destinatario+peso (comercial) o FECHA+FACTURA (financiero)
+function deduplicateC(existing, newRows){
+  const keys = new Set(existing.map(r => `${r.fecha_str||''}|${r.dest||''}|${r.peso||0}`));
+  const added = newRows.filter(r => !keys.has(`${r.fecha_str||''}|${r.dest||''}|${r.peso||0}`));
+  return [...existing, ...added];
+}
+
+function deduplicateF(existing, newRows){
+  const keys = new Set(existing.map(r => `${r.FECHA||''}|${r.FACTURA||r.factura||''}|${r.TOTAL||''}`));
+  const added = newRows.filter(r => !keys.has(`${r.FECHA||''}|${r.FACTURA||r.factura||''}|${r.TOTAL||''}`));
+  return [...existing, ...added];
+}
+
+
+// ════════════════ COMERCIAL ════════════════
+
+const MO=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const AGC={
+  'INTELLISHIP HN':'#0ea5e9','LOGISTEX':'#f97316','CONNECT':'#a855f7',
+  'GLOBEXHN':'#22c55e','ENCARGHO':'#f59e0b','ABBA':'#ec4899',
+  'FAST HN':'#14b8a6','KEYBOX':'#6366f1','T-JIRO EXPRESS':'#84cc16',
+  'Buzo':'#fb7185','ENVIAME':'#34d399','YAXA HONDURAS':'#fbbf24','CARGOX':'#a78bfa'
+};
+const YCOLS=['#0ea5e9','#f97316','#22d3ee','#a855f7','#22c55e'];
+
+let allData=[], filteredData=[], clientTypeFilter='TODOS', clientSearch='', clientSort='total', clientPage=0;
+const PAGE_SIZE=60;
+
+function fN(n){return(n||0).toLocaleString('es-HN');}
+function fW(n){return`${(n||0).toLocaleString('es-HN',{maximumFractionDigits:1})} lbs`;}
+function waNorm(t){let s=String(t||'').replace(/\D/g,'');if(s.length===8)s='504'+s;return s;}
+function waLink(tel,name){const t=waNorm(tel);const msg=encodeURIComponent(`Hola ${name}! 👋 Te contactamos de INTELLISHIP Honduras.`);return t?`https://wa.me/${t}?text=${msg}`:'#';}
+
+// ── FILE LOAD ─────────────────────────────────────────────────────────────────
+const fi=document.getElementById('file-input-c');
+const ul=document.getElementById('upload-label-c');
+ul.addEventListener('dragover',e=>{e.preventDefault();ul.style.borderColor='#0ea5e9';});
+ul.addEventListener('dragleave',()=>{ul.style.borderColor='';});
+ul.addEventListener('drop',e=>{e.preventDefault();ul.style.borderColor='';if(e.dataTransfer.files[0])loadFileC(e.dataTransfer.files[0]);});
+fi.addEventListener('change',()=>{if(fi.files[0])loadFileC(fi.files[0]);});
+
+function setStatus(msg){document.getElementById('upload-status-c').textContent=msg;}
+function setProgress(pct){
+  const pb=document.getElementById('progress-bar-c'),pf=document.getElementById('progress-fill-c');
+  pb.style.display='block';pf.style.width=pct+'%';
+  if(pct>=100)setTimeout(()=>pb.style.display='none',600);
+}
+
+async function loadFileC(file){
+  setStatus('⏳ Leyendo archivo...');setProgress(20);
+  const reader=new FileReader();
+  reader.onload=e=>{
+    setProgress(50);setStatus('⏳ Procesando datos...');
+    setTimeout(async ()=>{
+      try{
+        const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const raw=XLSX.utils.sheet_to_json(ws,{defval:''});
+        setProgress(80);
+        const newParsed = parseRowsC(raw);
+        // Add fecha_str for Firebase storage
+        newParsed.forEach(r=>{ if(r.fecha instanceof Date && !isNaN(r.fecha)) r.fecha_str=r.fecha.toISOString(); });
+        // Merge with existing
+        const existing = allData || [];
+        const merged = deduplicateC(existing, newParsed);
+        const added = merged.length - existing.length;
+        allData = merged;
+        setProgress(100);
+        setStatus(`✅ ${fN(added)} nuevos registros (${fN(merged.length)} total)`);
+        // Save to Firebase
+        await fbSave(FB_URL_C, merged, 'fb-dot-c', 'fb-txt-c');
+        setTimeout(initDashboardC,400);
+      }catch(err){setStatus('❌ Error: '+err.message,'upload-status-c');setProgress(0);}
+    },50);
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseRowsC(raw){
+  const FILT=['prueba','test','testing','demo'];
+  return raw.map(r=>{
+    const dest=String(r['Destinatario']||r['destinatario']||'').trim();
+    const svc=String(r['servicio']||r['Servicio']||'').toUpperCase().trim();
+    const ag=String(r['Agency']||r['agency']||'').trim();
+    const tel=String(r['Tel destinatario']||r['tel destinatario']||r['Tel Destinatario']||'').trim();
+    const peso=parseFloat(r['Peso']||r['peso']||0)||0;
+    const piezas=parseInt(r['Piezas']||r['piezas']||0)||0;
+    const fechaRaw=r['Fecha']||r['fecha'];
+    let fecha=NaN;
+    if(fechaRaw instanceof Date)fecha=fechaRaw;
+    else if(fechaRaw){const d=new Date(fechaRaw);if(!isNaN(d))fecha=d;}
+    return{dest,svc,ag,tel,peso,piezas,fecha,status:String(r['status']||''),casillero:String(r['Casillero']||r['casillero']||'')};
+  }).filter(r=>{
+    if(!r.dest||r.dest.length<2)return false;
+    const dl=r.dest.toLowerCase();
+    return!FILT.some(f=>dl.includes(f));
+  });
+}
+
+function initDashboardC(){
+  // Set date range
+  const dates=allData.filter(r=>r.fecha instanceof Date).map(r=>r.fecha);
+  if(dates.length){
+    const minD=dates.reduce((a,b)=>a<b?a:b);
+    const maxD=dates.reduce((a,b)=>a>b?a:b);
+    document.getElementById('date-from-c').value=minD.toISOString().slice(0,10);
+    document.getElementById('date-to-c').value=maxD.toISOString().slice(0,10);
+  }
+  // Agencies
+  const agencies=[...new Set(allData.map(r=>r.ag).filter(Boolean))].sort();
+  const agSel=document.getElementById('agency-filter-c');
+  agSel.innerHTML='<option value="">Todas las agencias</option>'+agencies.map(a=>`<option>${a}</option>`).join('');
+  // Services
+  const svcs=[...new Set(allData.map(r=>r.svc).filter(Boolean))].sort();
+  const svSel=document.getElementById('svc-filter-c');
+  svSel.innerHTML='<option value="">Todos los servicios</option>'+svcs.map(s=>`<option>${s}</option>`).join('');
+
+  document.getElementById('upload-screen-c').style.display='none';
+  document.getElementById('dashboard-c').style.display='block';
+  applyFilters();
+}
+
+function applyFiltersC(){
+  const from=document.getElementById('date-from-c').value;
+  const to=document.getElementById('date-to-c').value;
+  const ag=document.getElementById('agency-filter-c').value;
+  const sv=document.getElementById('svc-filter-c').value;
+  const fd=from?new Date(from):null;
+  const td=to?new Date(to+'T23:59:59'):null;
+  filteredData=allData.filter(r=>{
+    if(fd&&r.fecha instanceof Date&&r.fecha<fd)return false;
+    if(td&&r.fecha instanceof Date&&r.fecha>td)return false;
+    if(ag&&r.ag!==ag)return false;
+    if(sv&&r.svc!==sv)return false;
+    return true;
+  });
+  clientPage=0;
+  renderAllC();
+}
+
+function resetDataC(){allData=[];filteredData=[];document.getElementById('dashboard-c').style.display='none';document.getElementById('upload-screen-c').style.display='flex';document.getElementById('upload-status-c').textContent='';document.getElementById('file-input-c').value='';}
+
+function showTabC(id,btn){
+  ['overview','trends','agencies','clients','recs'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display=t===id?'':'none';
+  });
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ── RENDER ALL ────────────────────────────────────────────────────────────────
+function renderAllC(){
+  renderOverview_c();
+  renderTrends_c();
+  renderAgencies_c();
+  renderClients_c();
+  renderRecs_c();
+}
+
+// ── OVERVIEW ──────────────────────────────────────────────────────────────────
+function renderOverview_c(){
+  const d=filteredData;
+  const totalPeso=d.reduce((s,r)=>s+r.peso,0);
+  const totalPiezas=d.reduce((s,r)=>s+r.piezas,0);
+  const clientes=new Set(d.map(r=>r.dest.toLowerCase())).size;
+  const svcs={};d.forEach(r=>{svcs[r.svc]=(svcs[r.svc]||0)+r.peso;});
+  const topSvc=Object.entries(svcs).sort((a,b)=>b[1]-a[1])[0];
+
+  const byMonth={};
+  d.filter(r=>r.fecha instanceof Date).forEach(r=>{
+    const k=`${r.fecha.getFullYear()}-${String(r.fecha.getMonth()+1).padStart(2,'0')}`;
+    if(!byMonth[k])byMonth[k]={peso:0,piezas:0};
+    byMonth[k].peso+=r.peso;byMonth[k].piezas+=r.piezas;
+  });
+  const months=Object.entries(byMonth).sort((a,b)=>a[0].localeCompare(b[0])).slice(-6);
+
+  document.getElementById('tab-overview-c').innerHTML=`
+    <div class="kpi-grid">
+      <div class="kpi" style="border-color:#0ea5e920"><div class="kpi-lbl">Peso Total</div><div class="kpi-val" style="color:#0ea5e9">${fW(totalPeso)}</div><div class="kpi-sub">${fN(d.length)} envíos</div></div>
+      <div class="kpi" style="border-color:#22c55e20"><div class="kpi-lbl">Piezas</div><div class="kpi-val" style="color:#22c55e">${fN(totalPiezas)}</div><div class="kpi-sub">en el período</div></div>
+      <div class="kpi" style="border-color:#f97316 20"><div class="kpi-lbl">Clientes Únicos</div><div class="kpi-val" style="color:#f97316">${fN(clientes)}</div><div class="kpi-sub">destinatarios</div></div>
+      <div class="kpi" style="border-color:#a855f720"><div class="kpi-lbl">Servicio Top</div><div class="kpi-val" style="color:#a855f7;font-size:18px">${topSvc?topSvc[0]:'-'}</div><div class="kpi-sub">${topSvc?fW(topSvc[1]):''}</div></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Peso por mes (últimos 6 meses)</div>
+      <canvas id="cv-overview" height="180"></canvas>
+    </div>`;
+  drawBarChartC('cv-overview', months.map(([k])=>{const[y,m]=k.split('-');return MO[parseInt(m)-1]+' '+y.slice(2);}), months.map(([,v])=>v.peso), '#0ea5e9');
+}
+
+// ── TRENDS ────────────────────────────────────────────────────────────────────
+function renderTrends_c(){
+  const byYearMonth={};
+  filteredData.filter(r=>r.fecha instanceof Date).forEach(r=>{
+    const y=r.fecha.getFullYear(), m=r.fecha.getMonth();
+    if(!byYearMonth[y])byYearMonth[y]={};
+    if(!byYearMonth[y][m])byYearMonth[y][m]={peso:0,piezas:0};
+    byYearMonth[y][m].peso+=r.peso;byYearMonth[y][m].piezas+=r.piezas;
+  });
+  const years=Object.keys(byYearMonth).sort();
+  const labels=MO;
+
+  // Build datasets
+  const datasets=years.map((y,i)=>({year:y,data:Array.from({length:12},(_,m)=>byYearMonth[y][m]?byYearMonth[y][m].peso:null),color:YCOLS[i%YCOLS.length]}));
+
+  document.getElementById('tab-trends-c').innerHTML=`
+    <div class="chart-card">
+      <div class="chart-title">Comparativo de peso por mes y año</div>
+      <canvas id="cv-trends" height="220"></canvas>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px">${datasets.map(d=>`<span style="font-size:11px;color:${d.color}">● ${d.year}</span>`).join('')}</div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Piezas por mes</div>
+      <canvas id="cv-piezas" height="180"></canvas>
+    </div>`;
+
+  drawMultiLineChartC('cv-trends', labels, datasets);
+
+  const byMonth2={};
+  filteredData.filter(r=>r.fecha instanceof Date).forEach(r=>{
+    const m=r.fecha.getMonth();
+    byMonth2[m]=(byMonth2[m]||0)+r.piezas;
+  });
+  drawBarChartC('cv-piezas', MO, MO.map((_,i)=>byMonth2[i]||0), '#f97316');
+}
+
+// ── AGENCIES ──────────────────────────────────────────────────────────────────
+function renderAgencies_c(){
+  const byAg={};
+  filteredData.forEach(r=>{
+    if(!byAg[r.ag])byAg[r.ag]={peso:0,piezas:0,envios:0};
+    byAg[r.ag].peso+=r.peso;byAg[r.ag].piezas+=r.piezas;byAg[r.ag].envios++;
+  });
+  const sorted=Object.entries(byAg).sort((a,b)=>b[1].peso-a[1].peso);
+  const total=sorted.reduce((s,[,v])=>s+v.peso,0);
+
+  document.getElementById('tab-agencies-c').innerHTML=`
+    <div class="chart-card">
+      <div class="chart-title">Peso por agencia</div>
+      <canvas id="cv-ag" height="200"></canvas>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${sorted.map(([ag,v])=>{
+        const pct=total>0?(v.peso/total*100).toFixed(1):0;
+        const col=AGC[ag]||'#64748b';
+        return`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <span style="font-size:13px;font-weight:600;color:${col}">${ag}</span>
+            <span style="font-size:12px;color:var(--txt3)">${pct}% · ${fN(v.envios)} envíos</span>
+          </div>
+          <div style="background:var(--bg3);border-radius:4px;height:6px;overflow:hidden">
+            <div style="background:${col};width:${pct}%;height:100%;border-radius:4px"></div>
+          </div>
+          <div style="font-size:12px;color:var(--txt2);margin-top:6px">${fW(v.peso)} · ${fN(v.piezas)} piezas</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  drawBarChartC('cv-ag', sorted.map(([ag])=>ag.length>12?ag.slice(0,12)+'…':ag), sorted.map(([,v])=>v.peso), sorted.map(([ag])=>AGC[ag]||'#64748b'));
+}
+
+// ── CLIENTS ───────────────────────────────────────────────────────────────────
+function buildClientMapC(data){
+  const now=new Date();
+  const cmap={};
+  data.forEach(r=>{
+    const k=r.dest.toLowerCase();if(!k||k.length<2)return;
+    if(!cmap[k])cmap[k]={name:r.dest,tel:r.tel,peso:0,envios:0,lastDate:null,svcs:new Set()};
+    cmap[k].envios++;cmap[k].peso+=r.peso;cmap[k].svcs.add(r.svc);
+    if(r.fecha instanceof Date){if(!cmap[k].lastDate||r.fecha>cmap[k].lastDate)cmap[k].lastDate=r.fecha;}
+  });
+  return Object.values(cmap).map(c=>{
+    const dias=c.lastDate?Math.floor((now-c.lastDate)/864e5):9999;
+    let estado,ec,eb;
+    if(dias<=30&&c.envios>=10){estado='🔥 Caliente';ec='#ef4444';eb='#3b0a0a';}
+    else if(dias<=30){estado='✅ Activo';ec='#22c55e';eb='#052e16';}
+    else if(dias<=60){estado='🌡️ Tibio';ec='#f59e0b';eb='#2d1d00';}
+    else if(dias<=120){estado='🧊 Frío';ec='#0ea5e9';eb='#0c2340';}
+    else{estado='👻 Ausente';ec='#6b7280';eb='#111827';}
+    return{...c,dias,estado,ec,eb,svcs:[...c.svcs]};
+  });
+}
+
+function renderClients_c(){
+  const all=buildClientMapC(filteredData);
+  const counts={};all.forEach(c=>{counts[c.estado]=(counts[c.estado]||0)+1;});
+  const frios=(counts['🧊 Frío']||0)+(counts['👻 Ausente']||0);
+
+  let list=all;
+  if(clientTypeFilter!=='TODOS')list=list.filter(c=>c.estado===clientTypeFilter);
+  if(clientSearch)list=list.filter(c=>c.name.toLowerCase().includes(clientSearch.toLowerCase())||c.tel.includes(clientSearch));
+  if(clientSort==='peso')list.sort((a,b)=>b.peso-a.peso);
+  else if(clientSort==='envios')list.sort((a,b)=>b.envios-a.envios);
+  else if(clientSort==='dias')list.sort((a,b)=>b.dias-a.dias);
+  else list.sort((a,b)=>b.peso-a.peso);
+
+  const totalPages=Math.ceil(list.length/PAGE_SIZE);
+  const page=list.slice(clientPage*PAGE_SIZE,(clientPage+1)*PAGE_SIZE);
+
+  document.getElementById('tab-clients-c').innerHTML=`
+    <div class="kpi-grid" style="margin-bottom:16px">
+      <div class="kpi" style="border-color:#0ea5e920"><div class="kpi-lbl">Total Clientes</div><div class="kpi-val" style="color:#0ea5e9">${fN(all.length)}</div><div class="kpi-sub">en el período</div></div>
+      <div class="kpi" style="border-color:#ef444420"><div class="kpi-lbl">🔥 Calientes</div><div class="kpi-val" style="color:#ef4444">${fN(counts['🔥 Caliente']||0)}</div><div class="kpi-sub">alto volumen activo</div></div>
+      <div class="kpi" style="border-color:#22c55e20"><div class="kpi-lbl">✅ Activos</div><div class="kpi-val" style="color:#22c55e">${fN(counts['✅ Activo']||0)}</div><div class="kpi-sub">envío reciente</div></div>
+      <div class="kpi" style="border-color:#6b728020"><div class="kpi-lbl">🧊 Fríos + 👻 Ausentes</div><div class="kpi-val" style="color:#6b7280">${fN(frios)}</div><div class="kpi-sub">sin actividad reciente</div></div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${['TODOS','🔥 Caliente','✅ Activo','🌡️ Tibio','🧊 Frío','👻 Ausente'].map(l=>{
+          const cnt=l==='TODOS'?all.length:(counts[l]||0);
+          return`<button onclick="setClientFilterC('${l}',this)" class="fbtn ${clientTypeFilter===l?'active':''}">${l} (${fN(cnt)})</button>`;
+        }).join('')}
+      </div>
+      <button class="export-btn" onclick="exportClientesC()">📥 Exportar Fríos & Ausentes a Excel</button>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <input class="search-input" placeholder="Buscar cliente o teléfono..." oninput="setClientSearchC(this.value)" value="${clientSearch}"/>
+      <select class="ctrl" onchange="setClientSortC(this.value)">
+        <option value="peso" ${clientSort==='peso'?'selected':''}>Ordenar: Peso</option>
+        <option value="envios" ${clientSort==='envios'?'selected':''}>Ordenar: Envíos</option>
+        <option value="dias" ${clientSort==='dias'?'selected':''}>Ordenar: Más inactivos</option>
+      </select>
+      <span style="font-size:12px;color:var(--txt3)">${fN(list.length)} clientes · página ${clientPage+1}/${Math.max(1,totalPages)}</span>
+    </div>
+
+    <div id="client-list">
+      ${page.map(c=>`
+        <div class="cl-row">
+          <div style="flex:1;min-width:160px">
+            <div style="font-size:13px;font-weight:600">${c.name}</div>
+            <div style="font-size:11px;color:var(--txt3)">${c.tel||'Sin teléfono'} · ${c.dias<9999?c.dias+'d sin envío':'Sin fecha'}</div>
+          </div>
+          <span class="badge" style="background:${c.eb};color:${c.ec};border:1px solid ${c.ec}40">${c.estado}</span>
+          <div style="font-size:12px;color:var(--txt2);text-align:right">
+            <div>${fW(c.peso)}</div><div style="color:var(--txt3)">${fN(c.envios)} envíos</div>
+          </div>
+          ${c.tel?`<a href="${waLink(c.tel,c.name)}" target="_blank" class="wa-btn">💬 WA</a>`:'<span style="font-size:11px;color:var(--txt3)">Sin tel.</span>'}
+        </div>`).join('')}
+    </div>
+
+    ${totalPages>1?`<div style="display:flex;gap:8px;justify-content:center;margin-top:16px">
+      ${clientPage>0?`<button class="fbtn" onclick="setClientPageC(${clientPage-1})">← Anterior</button>`:''}
+      <span style="font-size:12px;color:var(--txt3);padding:6px 12px">${clientPage+1} / ${totalPages}</span>
+      ${clientPage<totalPages-1?`<button class="fbtn" onclick="setClientPageC(${clientPage+1})">Siguiente →</button>`:''}
+    </div>`:''}`;
+}
+
+function setClientFilterC(f,btn){clientTypeFilter=f;clientPage=0;renderClients_c();}
+function setClientSearchC(v){clientSearch=v;clientPage=0;renderClients_c();}
+function setClientSortC(v){clientSort=v;clientPage=0;renderClients_c();}
+function setClientPageC(p){clientPage=p;renderClients_c();}
+
+// ── EXPORT FRÍOS & AUSENTES ───────────────────────────────────────────────────
+function exportClientesC(){
+  const all=buildClientMapC(filteredData);
+  const targets=all.filter(c=>c.estado==='🧊 Frío'||c.estado==='👻 Ausente').sort((a,b)=>b.dias-a.dias);
+
+  if(!targets.length){alert('No hay clientes fríos o ausentes en el período seleccionado.');return;}
+
+  const rows=targets.map(c=>({
+    'Nombre':c.name,
+    'Teléfono':c.tel||'',
+    'WhatsApp':c.tel?`https://wa.me/${waNorm(c.tel)}`:'',
+    'Estado':c.estado.replace(/[🧊👻]/g,'').trim(),
+    'Días sin envío':c.dias<9999?c.dias:'Sin registro',
+    'Último envío':c.lastDate?c.lastDate.toLocaleDateString('es-HN'):'Sin registro',
+    'Total envíos':c.envios,
+    'Peso total (lbs)':parseFloat(c.peso.toFixed(2)),
+    'Servicios':c.svcs.join(', '),
+  }));
+
+  const ws=XLSX.utils.json_to_sheet(rows);
+  // Column widths
+  ws['!cols']=[{wch:30},{wch:14},{wch:38},{wch:10},{wch:14},{wch:14},{wch:12},{wch:16},{wch:20}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Clientes a Recuperar');
+
+  const fecha=new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb,`intelliship_frios_ausentes_${fecha}.xlsx`);
+}
+
+// ── RECOMMENDATIONS ───────────────────────────────────────────────────────────
+function renderRecs_c(){
+  const d=filteredData.filter(r=>r.fecha instanceof Date);
+  const byYM={};d.forEach(r=>{const k=`${r.fecha.getFullYear()}-${r.fecha.getMonth()}`;if(!byYM[k])byYM[k]={p:0};byYM[k].p+=r.peso;});
+  const sorted=Object.entries(byYM).sort((a,b)=>a[0].localeCompare(b[0]));
+  const last=sorted[sorted.length-1],prev=sorted[sorted.length-2];
+  const all=buildClientMapC(filteredData);
+  const frios=all.filter(c=>c.estado==='🧊 Frío'||c.estado==='👻 Ausente');
+
+  let recs=[];
+  if(last&&prev){const pc=((last[1].p-prev[1].p)/prev[1].p*100).toFixed(1);const up=parseFloat(pc)>=0;recs.push({t:up?'success':'warning',ti:up?`Mes en crecimiento: +${pc}%`:`Mes con caída: ${pc}%`,bo:up?`Peso este mes vs anterior. Mantén la pauta activa.`:`Considera activar clientes fríos por WhatsApp para recuperar volumen.`});}
+  if(frios.length>0)recs.push({t:'danger',ti:`${fN(frios.length)} clientes sin actividad reciente`,bo:`${fN(frios.filter(c=>c.estado==='🧊 Frío').length)} fríos y ${fN(frios.filter(c=>c.estado==='👻 Ausente').length)} ausentes. Usa el botón "Exportar Fríos & Ausentes" en la pestaña Clientes para descargar la lista con sus WhatsApps.`});
+  const byAg={};filteredData.forEach(r=>{byAg[r.ag]=(byAg[r.ag]||0)+r.peso;});
+  const topAg=Object.entries(byAg).sort((a,b)=>b[1]-a[1])[0];
+  if(topAg)recs.push({t:'info',ti:`Agencia líder: ${topAg[0]}`,bo:`Concentra ${fW(topAg[1])} de peso total. Asegura capacidad operativa para esta agencia.`});
+
+  document.getElementById('tab-recs-c').innerHTML=recs.map(r=>`
+    <div class="rec ${r.t}">
+      <div class="rec-title">${r.ti}</div>
+      <div class="rec-body">${r.bo}</div>
+    </div>`).join('')||'<div style="color:var(--txt3);font-size:13px">Sube más datos para ver recomendaciones.</div>';
+}
+
+// ── CHARTS (Canvas 2D) ────────────────────────────────────────────────────────
+function drawBarChartC(id,labels,values,colors){
+  const cv=document.getElementById(id);if(!cv)return;
+  const ctx=cv.getContext('2d');
+  const W=cv.offsetWidth||600,H=cv.height||180;
+  cv.width=W;
+  ctx.clearRect(0,0,W,H);
+  if(!values.length)return;
+  const pad={t:10,r:10,b:40,l:60};
+  const cW=W-pad.l-pad.r,cH=H-pad.t-pad.b;
+  const max=Math.max(...values.filter(v=>v!==null))*1.1||1;
+  const bW=Math.max(8,(cW/values.length)*0.6);
+  ctx.fillStyle='#1e3a5f30';
+  ctx.strokeStyle='#1e3a5f';
+  ctx.lineWidth=1;
+  // Grid
+  for(let i=0;i<=4;i++){const y=pad.t+cH*(1-i/4);ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+cW,y);ctx.strokeStyle='#1e3a5f';ctx.stroke();ctx.fillStyle='#475569';ctx.font='10px Segoe UI';ctx.textAlign='right';ctx.fillText(fN(Math.round(max*i/4/10)*10),pad.l-4,y+3);}
+  // Bars
+  values.forEach((v,i)=>{
+    if(v===null||v===undefined)return;
+    const x=pad.l+(cW/values.length)*i+(cW/values.length-bW)/2;
+    const bH=(v/max)*cH;
+    const y=pad.t+cH-bH;
+    ctx.fillStyle=Array.isArray(colors)?colors[i]:colors;
+    ctx.beginPath();ctx.roundRect(x,y,bW,bH,3);ctx.fill();
+    ctx.fillStyle='#94a3b8';ctx.font='10px Segoe UI';ctx.textAlign='center';
+    ctx.fillText(String(labels[i]).slice(0,8),x+bW/2,H-pad.b+14);
+  });
+}
+
+function drawMultiLineChartC(id,labels,datasets){
+  const cv=document.getElementById(id);if(!cv)return;
+  const ctx=cv.getContext('2d');
+  const W=cv.offsetWidth||600,H=cv.height||220;
+  cv.width=W;
+  ctx.clearRect(0,0,W,H);
+  const pad={t:10,r:10,b:40,l:60};
+  const cW=W-pad.l-pad.r,cH=H-pad.t-pad.b;
+  const allVals=datasets.flatMap(d=>d.data.filter(v=>v!==null));
+  const max=Math.max(...allVals)*1.1||1;
+  for(let i=0;i<=4;i++){const y=pad.t+cH*(1-i/4);ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+cW,y);ctx.strokeStyle='#1e3a5f';ctx.lineWidth=1;ctx.stroke();ctx.fillStyle='#475569';ctx.font='10px Segoe UI';ctx.textAlign='right';ctx.fillText(fN(Math.round(max*i/4/10)*10),pad.l-4,y+3);}
+  labels.forEach((l,i)=>{const x=pad.l+(cW/(labels.length-1))*i;ctx.fillStyle='#475569';ctx.font='10px Segoe UI';ctx.textAlign='center';ctx.fillText(l,x,H-pad.b+14);});
+  datasets.forEach(ds=>{
+    ctx.beginPath();ctx.strokeStyle=ds.color;ctx.lineWidth=2;
+    let started=false;
+    ds.data.forEach((v,i)=>{
+      if(v===null)return;
+      const x=pad.l+(cW/(labels.length-1))*i;
+      const y=pad.t+cH*(1-v/max);
+      if(!started){ctx.moveTo(x,y);started=true;}else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+    ds.data.forEach((v,i)=>{if(v===null)return;const x=pad.l+(cW/(labels.length-1))*i;const y=pad.t+cH*(1-v/max);ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fillStyle=ds.color;ctx.fill();});
+  });
+}
+
+// resize handled per portal;
+
+
+async function initComercial(){
+  // Try load from Firebase first
+  const rows = await fbLoad(FB_URL_C, 'fb-dot-c', 'fb-txt-c');
+  if(rows && rows.length){
+    allData = rows.map(r => ({
+      ...r,
+      fecha: r.fecha_str ? new Date(r.fecha_str) : NaN
+    }));
+    document.getElementById('upload-screen-c').style.display = 'none';
+    document.getElementById('dashboard-c').style.display = 'block';
+    document.getElementById('c-upload-title').textContent = '+ Agregar más datos';
+    document.getElementById('c-upload-msg').textContent = 'Datos cargados desde Firebase. Sube un Excel para agregar más meses.';
+    initDashboardC();
+  } else {
+    setFbStatus('fb-dot-c','fb-txt-c','empty','Sin datos en Firebase');
+  }
+  // Setup file input
+  const fi = document.getElementById('file-input-c');
+  const ul = document.getElementById('upload-label-c');
+  ul.addEventListener('dragover',e=>{e.preventDefault();ul.style.borderColor='#0ea5e9';});
+  ul.addEventListener('dragleave',()=>{ul.style.borderColor='';});
+  ul.addEventListener('drop',e=>{e.preventDefault();ul.style.borderColor='';if(e.dataTransfer.files[0])loadFileC(e.dataTransfer.files[0]);});
+  fi.addEventListener('change',()=>{if(fi.files[0])loadFileC(fi.files[0]);});
+}
+
+
+// ════════════════ FINANCIERO ════════════════
+
+// ── Config ────────────────────────────────────────────────────────────────────
+const COSTO_LB_USD = {AEREO:2.50, MARITIMO:1.75, EXPRESS:6.50};
+const SEGURO_POR_FACTURA = 20;   // L — ganancia pura, sin costo
+const COSTO_DELIVERY_LPS  = 65;  // L — costo fijo por entrega a domicilio
+const MO = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const SVC_COLORS = {AEREO:'#0ea5e9', MARITIMO:'#22c55e', EXPRESS:'#f97316'};
+let RAW=[], CHS={};
+
+const getTasa = () => parseFloat(document.getElementById('tasa-f')?.value||26.65);
+const fL  = n => `L${(n||0).toLocaleString("es-HN",{maximumFractionDigits:0})}`;
+const fN  = n => (n||0).toLocaleString("es-HN");
+const fP  = n => `${(n||0).toFixed(1)}%`;
+const cleanL = v => { try{ return parseFloat(String(v||0).replace(/L|,/g,'').trim())||0; }catch{ return 0; } };
+const waN = t => { let s=String(t||"").replace(/\D/g,""); if(s.length===8)s="504"+s; return s; };
+const waLink = (tel,name) => `https://wa.me/${waN(tel)}?text=Hola%20${encodeURIComponent(name)}%2C%20le%20contactamos%20de%20INTELLISHIP%20para%20recordarle%20su%20factura%20pendiente%20%F0%9F%93%A6`;
+const svcBadge = s => { const cls={AEREO:'background:#0c2340;color:#0ea5e9',MARITIMO:'background:#052e16;color:#22c55e',EXPRESS:'background:#2d0f00;color:#f97316'}; return `<span class="badge" style="${cls[s]||'background:#1e293b;color:#94a3b8'}">${s}</span>`; };
+
+// ── Upload ────────────────────────────────────────────────────────────────────
+document.getElementById('ulabel-f').addEventListener('dragover',e=>e.preventDefault());
+document.getElementById('ulabel-f').addEventListener('drop',e=>{e.preventDefault();loadFile(e.dataTransfer.files[0]);});
+document.getElementById('finput-f').addEventListener('change',e=>loadFile(e.target.files[0]));
+
+async function loadFileF(file){
+  if(!file) return;
+  const st=document.getElementById('ustatus-f'),pb=document.getElementById('pbar-f'),pf=document.getElementById('pfill-f');
+  st.textContent='⏳ Procesando...'; pb.style.display='block'; pf.style.width='20%';
+  if(file.name.endsWith('.csv')){
+    Papa.parse(file,{header:true,skipEmptyLines:true,complete:async res=>{
+      const newRowsCSV=res.data;
+      const mergedCSV=deduplicateF(RAW,newRowsCSV);
+      const addedCSV=mergedCSV.length-RAW.length;
+      RAW=mergedCSV;
+      pf.style.width='100%';
+      st.textContent=`✅ ${addedCSV.toLocaleString()} nuevos (${RAW.length.toLocaleString()} total)`;
+      await fbSave(FB_URL_F,RAW,'fb-dot-f','fb-txt-f');
+      setTimeout(initDashF,400);
+    },error:err=>{ st.textContent='❌ '+err.message; }});
+  } else {
+    const r=new FileReader();
+    r.onload=async e=>{
+      const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:true});
+      const newRows2 = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{raw:false});
+      const merged2 = deduplicateF(RAW, newRows2);
+      const added2 = merged2.length - RAW.length;
+      RAW = merged2;
+      pf.style.width='100%';
+      st.textContent=`✅ ${added2.toLocaleString()} nuevos (${RAW.length.toLocaleString()} total)`;
+      await fbSave(FB_URL_F, RAW, 'fb-dot-f', 'fb-txt-f');
+      setTimeout(initDashF,400);
+    };
+    r.readAsArrayBuffer(file);
+  }
+}
+
+function initDashF(){
+  document.getElementById('up-f').style.display='none';
+  document.getElementById('dash-f').style.display='block';
+  const dates=RAW.map(r=>new Date(r["FECHA"])).filter(d=>!isNaN(d));
+  if(dates.length){
+    const mn=dates.reduce((a,b)=>a<b?a:b), mx=dates.reduce((a,b)=>a>b?a:b);
+    document.getElementById('dfrom-f').value=mn.toISOString().split('T')[0];
+    document.getElementById('dto-f').value=mx.toISOString().split('T')[0];
+  }
+  applyFF();
+}
+
+function resetDF(){RAW=[];document.getElementById('dash-f').style.display='none';document.getElementById('up-f').style.display='flex';Object.values(CHS).forEach(c=>c.destroy());CHS={};}
+
+function applyFF(){
+  const svc=document.getElementById('svcf-f')?.value||'TODOS';
+  const pago=document.getElementById('pagof-f')?.value||'TODOS';
+  const df=document.getElementById('dfrom-f')?.value, dt=document.getElementById('dto-f')?.value;
+  const fd=df?new Date(df+'T00:00:00'):null, td=dt?new Date(dt+'T23:59:59'):null;
+  const base=RAW.filter(r=>{
+    const sok=svc==='TODOS'||(r["SERVICIO"]||"").toUpperCase()===svc;
+    const pok=pago==='TODOS'||r["PAGO"]===pago;
+    const d=new Date(r["FECHA"]);
+    return sok&&pok&&(!fd||d>=fd)&&(!td||d<=td);
+  });
+  const C=computeF(base);
+  renderOVF(C); renderSVF(C); renderPendingF(C); renderClientsF(C); renderTrendF(C); renderPLF(C);
+}
+
+// ── Core compute ──────────────────────────────────────────────────────────────
+function computeF(rows){
+  const tasa = getTasaF();
+
+  const data = rows.map(r=>{
+    const svc    = (r["SERVICIO"]||"AEREO").toUpperCase();
+    const peso   = parseFloat(r["PESO"])||0;
+    const total  = cleanL(r["TOTAL"]);
+    const flete  = cleanL(r["FLETE"]);
+    const extras = cleanL(r["EXTRAS"]);
+    const cargos = cleanL(r["CARGOS"]);
+    const desc   = cleanL(r["DESC"]);
+    const pago   = (r["PAGO"]||"").trim();
+    const fecha  = new Date(r["FECHA"]);
+    const tieneDelivery = (extras+cargos) > 0;
+
+    // ── REVENUE ──────────────────────────────────────────────────────────────
+    // Flete cobrado al cliente
+    const rev_flete    = flete;
+    // Delivery cobrado al cliente (lo que sea — L70, L100, L150...)
+    const rev_delivery = extras + cargos;
+    // Seguro: L20 por factura — GANANCIA PURA (sin costo)
+    const rev_seguro   = SEGURO_POR_FACTURA;
+    // Descuento resta
+    const rev_total    = rev_flete + rev_delivery + rev_seguro - desc;
+
+    // ── COSTO ─────────────────────────────────────────────────────────────────
+    // Costo de envío = peso × tarifa en USD × tasa de cambio
+    const costo_lb_lps  = (COSTO_LB_USD[svc]||2.50) * tasa;
+    const costo_flete   = peso * costo_lb_lps;
+    // Costo delivery = L65 fijo si hay entrega a domicilio
+    const costo_entrega = tieneDelivery ? COSTO_DELIVERY_LPS : 0;
+    // Seguro NO tiene costo
+    const costo_total   = costo_flete + costo_entrega;
+
+    // ── PROFIT ────────────────────────────────────────────────────────────────
+    const profit_flete    = rev_flete - costo_flete;
+    const profit_delivery = rev_delivery - costo_entrega;
+    const profit_seguro   = rev_seguro; // 100% ganancia
+    const profit_total    = rev_total - costo_total;
+    const margen          = rev_total > 0 ? (profit_total/rev_total*100) : 0;
+
+    return {
+      ...r, svc, peso, total, flete, extras, cargos, desc, pago, fecha,
+      tieneDelivery,
+      rev_flete, rev_delivery, rev_seguro, rev_total,
+      costo_flete, costo_entrega, costo_total,
+      profit_flete, profit_delivery, profit_seguro, profit_total, margen,
+      cobrado:  pago==="PRE-PAGADO",
+      pendiente: pago==="C.O.D",
+      destinatario: (r["DESTINATARIO"]||"").trim(),
+      tel: (r["Telefono"]||r["TEL"]||"").trim(),
+      guia: r["GUIA#"]||""
+    };
+  });
+
+  const tot = (arr,k) => arr.reduce((s,r)=>s+(r[k]||0),0);
+  const cobrados   = data.filter(r=>r.cobrado);
+  const pendientes = data.filter(r=>r.pendiente);
+
+  // By service
+  const byService={};
+  ['AEREO','MARITIMO','EXPRESS'].forEach(s=>{
+    const sd=data.filter(r=>r.svc===s);
+    byService[s]={
+      count:sd.length, peso:tot(sd,'peso'),
+      rev_flete:tot(sd,'rev_flete'), rev_delivery:tot(sd,'rev_delivery'),
+      rev_seguro:tot(sd,'rev_seguro'), rev_total:tot(sd,'rev_total'),
+      costo_flete:tot(sd,'costo_flete'), costo_entrega:tot(sd,'costo_entrega'), costo_total:tot(sd,'costo_total'),
+      profit_flete:tot(sd,'profit_flete'), profit_delivery:tot(sd,'profit_delivery'),
+      profit_seguro:tot(sd,'profit_seguro'), profit_total:tot(sd,'profit_total'),
+      cobrado:tot(sd.filter(r=>r.cobrado),'total'),
+      pendiente:tot(sd.filter(r=>r.pendiente),'total'),
+      margen:tot(sd,'rev_total')>0?(tot(sd,'profit_total')/tot(sd,'rev_total')*100):0
+    };
+  });
+
+  // By month
+  const byMonth={};
+  data.forEach(r=>{
+    if(isNaN(r.fecha)) return;
+    const k=`${r.fecha.getFullYear()}-${String(r.fecha.getMonth()).padStart(2,'0')}`;
+    if(!byMonth[k]) byMonth[k]={y:r.fecha.getFullYear(),m:r.fecha.getMonth(),rev:0,profit:0,cobrado:0,pendiente:0,count:0,costo:0};
+    byMonth[k].rev+=r.rev_total; byMonth[k].profit+=r.profit_total; byMonth[k].costo+=r.costo_total; byMonth[k].count++;
+    if(r.cobrado) byMonth[k].cobrado+=r.total;
+    if(r.pendiente) byMonth[k].pendiente+=r.total;
+  });
+  const monthly=Object.values(byMonth).sort((a,b)=>a.y-b.y||a.m-b.m).map(r=>({...r,label:`${MO[r.m]} ${r.y}`}));
+
+  // Pending sorted
+  const topPending=[...pendientes].sort((a,b)=>b.total-a.total).slice(0,100);
+  const oldestPending=[...pendientes].filter(r=>!isNaN(r.fecha)).sort((a,b)=>a.fecha-b.fecha).slice(0,100);
+
+  // Clients
+  const cmap={};
+  data.forEach(r=>{
+    const k=r.destinatario.toLowerCase(); if(!k||k.length<2) return;
+    if(!cmap[k]) cmap[k]={name:r.destinatario,tel:r.tel,count:0,rev:0,profit:0,cobrado:0,pendiente:0,svcs:new Set()};
+    cmap[k].count++; cmap[k].rev+=r.rev_total; cmap[k].profit+=r.profit_total; cmap[k].svcs.add(r.svc);
+    if(r.cobrado) cmap[k].cobrado+=r.total;
+    if(r.pendiente) cmap[k].pendiente+=r.total;
+  });
+  const topClients=Object.values(cmap).sort((a,b)=>b.rev-a.rev);
+
+  const totals={
+    count:data.length, peso:tot(data,'peso'),
+    rev_flete:tot(data,'rev_flete'), rev_delivery:tot(data,'rev_delivery'),
+    rev_seguro:tot(data,'rev_seguro'), rev_total:tot(data,'rev_total'),
+    costo_flete:tot(data,'costo_flete'), costo_entrega:tot(data,'costo_entrega'), costo_total:tot(data,'costo_total'),
+    profit_flete:tot(data,'profit_flete'), profit_delivery:tot(data,'profit_delivery'),
+    profit_seguro:tot(data,'profit_seguro'), profit_total:tot(data,'profit_total'),
+    cobrado:tot(cobrados,'total'), pendiente:tot(pendientes,'total'),
+    margen:tot(data,'rev_total')>0?(tot(data,'profit_total')/tot(data,'rev_total')*100):0,
+    nCobradas:cobrados.length, nPendientes:pendientes.length
+  };
+
+  return {data,cobrados,pendientes,byService,monthly,topPending,oldestPending,topClients,totals};
+}
+
+function mkChartF(id,type,labels,datasets,extra={}){
+  if(CHS[id]) CHS[id].destroy();
+  const cv=document.getElementById(id); if(!cv) return;
+  CHS[id]=new Chart(cv,{type,data:{labels,datasets},options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:'#64748b',font:{family:'DM Sans',size:11}}}},
+    scales:type==='pie'||type==='doughnut'?{}:{
+      x:{ticks:{color:'#475569',font:{size:10}},grid:{color:'#0f2040'},border:{display:false}},
+      y:{ticks:{color:'#475569',font:{size:10},callback:v=>fL(v)},grid:{color:'#0f2040'},border:{display:false}}
+    },...extra}});
+}
+
+// ── OVERVIEW ──────────────────────────────────────────────────────────────────
+function renderOVF({totals,byService,monthly}){
+  const kpis=[
+    {l:'Revenue Total',v:fL(totals.rev_total),c:'#22c55e',sub:`${fN(totals.count)} facturas · ${fN(Math.round(totals.peso))} lbs`},
+    {l:'Profit Bruto',v:fL(totals.profit_total),c:totals.profit_total>=0?'#4ade80':'#f87171',sub:`Margen: ${fP(totals.margen)}`},
+    {l:'Costo Total',v:fL(totals.costo_total),c:'#ef4444',sub:`Flete: ${fL(totals.costo_flete)} · Delivery: ${fL(totals.costo_entrega)}`},
+    {l:'PRE-PAGADO Cobrado',v:fL(totals.cobrado),c:'#0ea5e9',sub:`${fN(totals.nCobradas)} facturas cobradas (PRE-PAGADO)`},
+    {l:'C.O.D Pendiente',v:fL(totals.pendiente),c:'#f97316',sub:`${fN(totals.nPendientes)} facturas por cobrar`},
+    {l:'Profit Flete',v:fL(totals.profit_flete),c:'#a78bfa',sub:`Rev flete: ${fL(totals.rev_flete)}`},
+    {l:'Profit Delivery',v:fL(totals.profit_delivery),c:'#34d399',sub:`Rev: ${fL(totals.rev_delivery)} · Costo: ${fL(totals.costo_entrega)}`},
+    {l:'Seguro (ganancia pura)',v:fL(totals.rev_seguro),c:'#fbbf24',sub:`L20 × ${fN(totals.count)} facturas`},
+  ];
+
+  let h=`<div class="kpi-grid">${kpis.map(k=>`
+    <div class="kpi" style="border:1px solid ${k.c}30">
+      <div class="kpi-lbl">${k.l}</div>
+      <div class="kpi-val" style="color:${k.c}">${k.v}</div>
+      <div class="kpi-sub">${k.sub}</div>
+    </div>`).join('')}</div>`;
+
+  // Service cards
+  h+=`<div class="three">`;
+  [{s:'AEREO',icon:'✈️'},{s:'MARITIMO',icon:'🚢'},{s:'EXPRESS',icon:'⚡'}].forEach(({s,icon})=>{
+    const d=byService[s]||{};
+    const c=SVC_COLORS[s];
+    h+=`<div class="card" style="border-color:${c}40">
+      <div class="card-title" style="color:${c};font-size:14px">${icon} ${s}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        ${[
+          {l:'Revenue',v:fL(d.rev_total||0),c},
+          {l:'Profit',v:fL(d.profit_total||0),c:(d.profit_total||0)>=0?'#4ade80':'#f87171'},
+          {l:'Margen',v:fP(d.margen||0),c:(d.margen||0)>=20?'#4ade80':(d.margen||0)>=0?'#fbbf24':'#f87171'},
+          {l:'Facturas',v:fN(d.count||0),c:'#94a3b8'},
+          {l:'Cobrado',v:fL(d.cobrado||0),c:'#0ea5e9'},
+          {l:'Pendiente',v:fL(d.pendiente||0),c:'#f97316'},
+          {l:'Profit Flete',v:fL(d.profit_flete||0),c:'#a78bfa'},
+          {l:'Profit Delivery',v:fL(d.profit_delivery||0),c:'#34d399'},
+        ].map(k=>`<div style="background:#060d1a;border-radius:7px;padding:7px 9px">
+          <div style="font-size:9px;color:#475569;margin-bottom:2px">${k.l}</div>
+          <div style="font-size:13px;font-weight:700;color:${k.c}">${k.v}</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  });
+  h+=`</div>`;
+
+  h+=`<div class="card"><div class="card-title">💰 Revenue vs Profit vs Costo — Mensual</div><div style="position:relative;height:250px"><canvas id="c-ov-m"></canvas></div></div>`;
+  h+=`<div class="two">
+    <div class="card"><div class="card-title">💳 COD vs PRE-PAGADO</div><div style="position:relative;height:200px"><canvas id="c-ov-pago"></canvas></div></div>
+    <div class="card"><div class="card-title">📦 Revenue por Servicio</div><div style="position:relative;height:200px"><canvas id="c-ov-svc"></canvas></div></div>
+  </div>`;
+
+  document.getElementById('tab-ov-f').innerHTML=h;
+  setTimeout(()=>{
+    mkChartF('c-ov-m','bar',monthly.map(r=>r.label),[
+      {label:'Revenue',data:monthly.map(r=>Math.round(r.rev)),backgroundColor:'#22c55e80',borderRadius:4,borderSkipped:false},
+      {label:'Profit',data:monthly.map(r=>Math.round(r.profit)),backgroundColor:'#0ea5e980',borderRadius:4,borderSkipped:false},
+      {label:'Costo',data:monthly.map(r=>Math.round(r.costo)),backgroundColor:'#ef444460',borderRadius:4,borderSkipped:false},
+    ]);
+    mkChartF('c-ov-pago','doughnut',['PRE-PAGADO Cobrado','C.O.D Pendiente'],[{data:[Math.round(totals.cobrado),Math.round(totals.pendiente)],backgroundColor:['#0ea5e9','#f97316'],borderWidth:0}],{plugins:{legend:{position:'bottom',labels:{color:'#64748b',font:{size:10}}}}});
+    mkChartF('c-ov-svc','doughnut',['AEREO','MARITIMO','EXPRESS'],[{data:['AEREO','MARITIMO','EXPRESS'].map(s=>Math.round(byService[s]?.rev_total||0)),backgroundColor:['#0ea5e9','#22c55e','#f97316'],borderWidth:0}],{plugins:{legend:{position:'bottom',labels:{color:'#64748b',font:{size:10}}}}});
+  },50);
+}
+
+// ── BY SERVICE ────────────────────────────────────────────────────────────────
+function renderSVF({byService,data}){
+  const tasa=getTasaF();
+  let h='';
+  [{s:'AEREO',icon:'✈️'},{s:'MARITIMO',icon:'🚢'},{s:'EXPRESS',icon:'⚡'}].forEach(({s,icon})=>{
+    const d=byService[s]||{};
+    const c=SVC_COLORS[s];
+    const cUSD=COSTO_LB_USD[s];
+    h+=`<div class="card" style="border-color:${c}40">
+      <div class="card-title" style="color:${c};font-size:15px">${icon} ${s} — Desglose Financiero</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:10px">
+        ${[
+          {l:'Revenue Total',v:fL(d.rev_total||0),c},
+          {l:'Costo Total',v:fL(d.costo_total||0),c:'#ef4444'},
+          {l:'Profit Total',v:fL(d.profit_total||0),c:(d.profit_total||0)>=0?'#4ade80':'#f87171'},
+          {l:'Margen',v:fP(d.margen||0),c:(d.margen||0)>=20?'#4ade80':(d.margen||0)>=0?'#fbbf24':'#f87171'},
+          {l:'Rev. Flete',v:fL(d.rev_flete||0),c:'#94a3b8'},
+          {l:'Costo Flete',v:fL(d.costo_flete||0),c:'#ef444480'},
+          {l:'Profit Flete',v:fL(d.profit_flete||0),c:'#a78bfa'},
+          {l:'Rev. Delivery',v:fL(d.rev_delivery||0),c:'#34d399'},
+          {l:'Costo Delivery',v:fL(d.costo_entrega||0),c:'#ef444480'},
+          {l:'Profit Delivery',v:fL(d.profit_delivery||0),c:'#34d399'},
+          {l:'Seguro (puro)',v:fL(d.rev_seguro||0),c:'#fbbf24'},
+          {l:`Tarifa ($/lb)`,v:`$${cUSD} = ${fL(cUSD*tasa)}/lb`,c:'#475569'},
+        ].map(k=>`<div style="background:#060d1a;border-radius:7px;padding:8px 10px">
+          <div style="font-size:9px;color:#475569;margin-bottom:2px">${k.l}</div>
+          <div style="font-size:13px;font-weight:700;color:${k.c}">${k.v}</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  });
+
+  // Monthly by service charts
+  const monthSvc={};
+  data.forEach(r=>{
+    if(isNaN(r.fecha)) return;
+    const k=`${r.fecha.getFullYear()}-${String(r.fecha.getMonth()).padStart(2,'0')}`;
+    if(!monthSvc[k]) monthSvc[k]={y:r.fecha.getFullYear(),m:r.fecha.getMonth(),AEREO:{rev:0,profit:0},MARITIMO:{rev:0,profit:0},EXPRESS:{rev:0,profit:0}};
+    monthSvc[k][r.svc].rev+=r.rev_total; monthSvc[k][r.svc].profit+=r.profit_total;
+  });
+  const ms=Object.values(monthSvc).sort((a,b)=>a.y-b.y||a.m-b.m);
+  const ml=ms.map(r=>`${MO[r.m]} ${r.y}`);
+
+  h+=`<div class="card"><div class="card-title">📈 Revenue Mensual por Servicio</div><div style="position:relative;height:240px"><canvas id="c-sv-rev"></canvas></div></div>`;
+  h+=`<div class="card"><div class="card-title">💸 Profit Mensual por Servicio</div><div style="position:relative;height:220px"><canvas id="c-sv-prf"></canvas></div></div>`;
+
+  document.getElementById('tab-sv-f').innerHTML=h;
+  setTimeout(()=>{
+    mkChartF('c-sv-rev','bar',ml,['AEREO','MARITIMO','EXPRESS'].map(s=>({label:s,data:ms.map(r=>Math.round(r[s].rev)),backgroundColor:SVC_COLORS[s]+'80',borderRadius:4,borderSkipped:false})));
+    mkChartF('c-sv-prf','bar',ml,['AEREO','MARITIMO','EXPRESS'].map(s=>({label:s,data:ms.map(r=>Math.round(r[s].profit)),backgroundColor:SVC_COLORS[s]+'80',borderRadius:4,borderSkipped:false})));
+  },50);
+}
+
+// ── PENDING ───────────────────────────────────────────────────────────────────
+function renderPendingF({topPending,oldestPending,totals,pendientes}){
+  const rows=(arr)=>arr.map((r,i)=>{
+    const dias=!isNaN(r.fecha)?Math.floor((new Date()-r.fecha)/(864e5)):0;
+    const urgent=dias>30;
+    return`<tr>
+      <td style="color:#334155">${i+1}</td>
+      <td style="font-weight:500;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.destinatario}</td>
+      <td>${svcBadge(r.svc)}</td>
+      <td style="font-weight:700;color:#f97316">${fL(r.total)}</td>
+      <td style="color:#94a3b8">${fL(r.flete)}</td>
+      <td style="color:#34d399">${fL(r.rev_delivery)}</td>
+      <td style="color:${urgent?'#f87171':'#64748b'};font-weight:${urgent?700:400}">${dias}d${urgent?' ⚠️':''}</td>
+      <td style="font-size:10px;color:#334155">${r.guia}</td>
+      <td><a href="${waLink(r.tel,r.destinatario)}" target="_blank" class="wa">💬 WA</a></td>
+    </tr>`;
+  }).join('');
+
+  // Consolidar pendientes por cliente
+  const cmap={};
+  (pendientes||[]).forEach(r=>{
+    const k=r.destinatario.toLowerCase(); if(!k||k.length<2) return;
+    if(!cmap[k]) cmap[k]={name:r.destinatario,tel:r.tel,total:0,facturas:0,svcs:new Set(),oldest:r.fecha,maxDias:0};
+    cmap[k].total+=r.total; cmap[k].facturas++;
+    cmap[k].svcs.add(r.svc);
+    if(!isNaN(r.fecha)&&r.fecha<cmap[k].oldest) cmap[k].oldest=r.fecha;
+    const dias=!isNaN(r.fecha)?Math.floor((new Date()-r.fecha)/(864e5)):0;
+    if(dias>cmap[k].maxDias) cmap[k].maxDias=dias;
+  });
+  const clientesPendientes=Object.values(cmap).sort((a,b)=>b.total-a.total);
+
+  const clientRows=clientesPendientes.map((c,i)=>{
+    const urgent=c.maxDias>30;
+    return`<tr>
+      <td style="color:#334155">${i+1}</td>
+      <td style="font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</td>
+      <td style="font-size:10px">${[...c.svcs].map(s=>svcBadge(s)).join(' ')}</td>
+      <td style="font-weight:700;color:#f97316;font-size:14px">${fL(c.total)}</td>
+      <td style="color:#64748b">${fN(c.facturas)} factura${c.facturas>1?'s':''}</td>
+      <td style="color:${urgent?'#f87171':'#64748b'};font-weight:${urgent?700:400}">${c.maxDias}d${urgent?' ⚠️':''}</td>
+      <td><a href="${waLink(c.tel,c.name)}" target="_blank" class="wa">💬 WA</a></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('tab-pending-f').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <div class="kpi" style="border:1px solid #f9731640">
+        <div class="kpi-lbl">Total C.O.D Pendiente</div>
+        <div class="kpi-val" style="color:#f97316">${fL(totals.pendiente)}</div>
+        <div class="kpi-sub">${fN(totals.nPendientes)} facturas · ${fN(clientesPendientes.length)} clientes</div>
+      </div>
+      <div class="kpi" style="border:1px solid #0ea5e940">
+        <div class="kpi-lbl">Total PRE-PAGADO Cobrado</div>
+        <div class="kpi-val" style="color:#0ea5e9">${fL(totals.cobrado)}</div>
+        <div class="kpi-sub">${fN(totals.nCobradas)} facturas cobradas (PRE-PAGADO)</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:14px">
+      <button onclick="showPV('consolidated',this)" id="pbtn-c"
+        style="padding:6px 16px;border-radius:8px;border:1px solid #f97316;background:#f9731620;color:#f97316;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">
+        👤 Por Cliente
+      </button>
+      <button onclick="showPV('big',this)" id="pbtn-b"
+        style="padding:6px 16px;border-radius:8px;border:1px solid #1e293b;background:transparent;color:#475569;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">
+        💸 Más Grandes
+      </button>
+      <button onclick="showPV('oldest',this)" id="pbtn-o"
+        style="padding:6px 16px;border-radius:8px;border:1px solid #1e293b;background:transparent;color:#475569;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">
+        ⏰ Más Antiguas
+      </button>
+    </div>
+    <div id="pv-consolidated" class="card">
+      <div class="card-title">👤 Deuda Consolidada por Cliente — Total acumulado pendiente</div>
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>#</th><th>Cliente</th><th>Servicios</th><th>Total Pendiente</th><th>Facturas</th><th>Antigüedad máx.</th><th>WA</th></tr></thead>
+        <tbody>${clientRows}</tbody>
+      </table></div>
+      <div style="padding:8px 12px;font-size:10px;color:#334155;border-top:1px solid #0f2040">${fN(clientesPendientes.length)} clientes · ordenado por monto mayor</div>
+    </div>
+    <div id="pv-big" class="card" style="display:none">
+      <div class="card-title">💸 Facturas individuales más grandes sin pagar</div>
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>#</th><th>Cliente</th><th>Servicio</th><th>Total</th><th>Flete</th><th>Delivery</th><th>Días</th><th>Guía</th><th>WA</th></tr></thead>
+        <tbody>${rows(topPending)}</tbody>
+      </table></div>
+    </div>
+    <div id="pv-oldest" class="card" style="display:none">
+      <div class="card-title">⏰ Facturas más antiguas sin pagar</div>
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>#</th><th>Cliente</th><th>Servicio</th><th>Total</th><th>Flete</th><th>Delivery</th><th>Días</th><th>Guía</th><th>WA</th></tr></thead>
+        <tbody>${rows(oldestPending)}</tbody>
+      </table></div>
+    </div>`;
+}
+
+// ── CLIENTS ───────────────────────────────────────────────────────────────────
+function renderClientsF({topClients}){
+  const rows=topClients.slice(0,150).map((c,i)=>`<tr>
+    <td style="color:#334155">${i+1}</td>
+    <td style="font-weight:500;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</td>
+    <td style="font-size:10px">${[...c.svcs].map(s=>svcBadge(s)).join(' ')}</td>
+    <td style="font-weight:700;color:#22c55e">${fL(c.rev)}</td>
+    <td style="color:${c.profit>=0?'#4ade80':'#f87171'};font-weight:700">${fL(c.profit)}</td>
+    <td style="color:#0ea5e9">${fL(c.cobrado)}</td>
+    <td style="color:${c.pendiente>0?'#f97316':'#334155'};font-weight:${c.pendiente>0?700:400}">${fL(c.pendiente)}</td>
+    <td style="color:#64748b">${fN(c.count)}</td>
+    <td>${c.pendiente>0?`<a href="${waLink(c.tel,c.name)}" target="_blank" class="wa">💬 WA</a>`:''}</td>
+  </tr>`).join('');
+
+  document.getElementById('tab-clients-f').innerHTML=`
+    <div class="card">
+      <div class="card-title">⭐ Top Clientes por Revenue · ${fN(topClients.length)} clientes</div>
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>#</th><th>Cliente</th><th>Servicios</th><th>Revenue</th><th>Profit</th><th>Cobrado</th><th>Pendiente</th><th>Facturas</th><th>WA</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+      <div style="padding:8px 12px;font-size:10px;color:#334155;border-top:1px solid #0f2040">💬 WA aparece solo cuando el cliente tiene saldo pendiente</div>
+    </div>`;
+}
+
+// ── TREND ─────────────────────────────────────────────────────────────────────
+function renderTrendF({monthly}){
+  if(!monthly.length){ document.getElementById('tab-trend-f').innerHTML='<div style="text-align:center;padding:48px 0;color:#334155">Sin datos suficientes</div>'; return; }
+
+  const rows=monthly.map((m,i)=>{
+    const prev=monthly[i-1];
+    const rg=prev&&prev.rev>0?((m.rev-prev.rev)/prev.rev*100):null;
+    const pg=prev&&prev.profit>0?((m.profit-prev.profit)/prev.profit*100):null;
+    return`<tr>
+      <td style="font-weight:600">${m.label}</td>
+      <td style="color:#22c55e;font-weight:700">${fL(m.rev)}</td>
+      <td style="color:${m.profit>=0?'#4ade80':'#f87171'};font-weight:700">${fL(m.profit)}</td>
+      <td style="color:#ef4444">${fL(m.costo)}</td>
+      <td style="color:#0ea5e9">${fL(m.cobrado)}</td>
+      <td style="color:#f97316">${fL(m.pendiente)}</td>
+      <td style="color:${rg===null?'#334155':rg>=0?'#4ade80':'#f87171'};font-weight:600">${rg===null?'—':(rg>=0?'▲':'▼')+Math.abs(rg).toFixed(1)+'%'}</td>
+      <td style="color:#64748b">${fN(m.count)}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('tab-trend-f').innerHTML=`
+    <div class="card"><div class="card-title">📈 Revenue · Profit · Costo — Línea de Tiempo</div><div style="position:relative;height:260px"><canvas id="c-tr-main"></canvas></div></div>
+    <div class="card"><div class="card-title">💳 Cobrado vs Pendiente por Mes</div><div style="position:relative;height:220px"><canvas id="c-tr-pago"></canvas></div></div>
+    <div class="card">
+      <div class="card-title">📊 Resumen Mensual Detallado</div>
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>Mes</th><th>Revenue</th><th>Profit</th><th>Costo</th><th>Cobrado</th><th>Pendiente</th><th>Crecimiento</th><th>Facturas</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+    </div>`;
+
+  setTimeout(()=>{
+    mkChartF('c-tr-main','line',monthly.map(r=>r.label),[
+      {label:'Revenue',data:monthly.map(r=>Math.round(r.rev)),borderColor:'#22c55e',backgroundColor:'#22c55e15',borderWidth:2.5,pointRadius:4,tension:.3,fill:true},
+      {label:'Profit',data:monthly.map(r=>Math.round(r.profit)),borderColor:'#0ea5e9',backgroundColor:'#0ea5e915',borderWidth:2.5,pointRadius:4,tension:.3,fill:true},
+      {label:'Costo',data:monthly.map(r=>Math.round(r.costo)),borderColor:'#ef4444',backgroundColor:'#ef444415',borderWidth:2,pointRadius:3,tension:.3,fill:true},
+    ]);
+    mkChartF('c-tr-pago','bar',monthly.map(r=>r.label),[
+      {label:'Cobrado (PRE-PAGADO)',data:monthly.map(r=>Math.round(r.cobrado)),backgroundColor:'#0ea5e980',borderRadius:4,borderSkipped:false},
+      {label:'Pendiente (PRE-PAGADO)',data:monthly.map(r=>Math.round(r.pendiente)),backgroundColor:'#f9731680',borderRadius:4,borderSkipped:false},
+    ]);
+  },50);
+}
+
+
+function showPV(v,btn){
+  ['consolidated','big','oldest'].forEach(id=>document.getElementById('pv-'+id).style.display=id===v?'block':'none');
+  ['pbtn-c','pbtn-b','pbtn-o'].forEach(id=>{
+    const el=document.getElementById(id); if(!el) return;
+    el.style.borderColor='#1e293b'; el.style.background='transparent'; el.style.color='#475569';
+  });
+  if(btn){ btn.style.borderColor='#f97316'; btn.style.background='#f9731620'; btn.style.color='#f97316'; }
+}
+
+// ── P&L MENSUAL ──────────────────────────────────────────────────────────────
+const COSTOS_FIJOS = [{cat:"Luz",val:2500},{cat:"Salarios",val:153500},{cat:"Manager Cargo",val:5800},{cat:"Shipday",val:3000},{cat:"Renta oficina TGU",val:52291},{cat:"Pago Pickup",val:14500},{cat:"Pago SUV",val:15000},{cat:"Publicidad agencia",val:14000},{cat:"Valla publicitaria",val:15590},{cat:"Publicidad Meta",val:11200},{cat:"Publicidad TikTok",val:3400},{cat:"Embalaje y tape",val:5000},{cat:"Combustible",val:10000},{cat:"Internet oficina",val:1200},{cat:"Cosas de oficina",val:3000},{cat:"Seguros de vehículo",val:6000}];
+const TOTAL_FIJOS  = 315981;
+
+function renderPLF({totals, monthly}) {
+  const meses = monthly.length || 1;
+  // Revenue y profit variable del período seleccionado
+  const revTotal   = totals.rev_total   || 0;
+  const profVar    = totals.profit_total || 0; // profit bruto (sin costos fijos)
+  const costoVar   = totals.costo_total  || 0;
+
+  // Prorratear costos fijos por la cantidad de meses en el período
+  const costosFijosPeriodo = TOTAL_FIJOS * meses;
+  const utilidadNeta = profVar - costosFijosPeriodo;
+  const margenNeto   = revTotal > 0 ? (utilidadNeta / revTotal * 100) : 0;
+
+  // Por mes promedio
+  const revMes    = revTotal / meses;
+  const profVarMes = profVar / meses;
+  const utilMes   = utilidadNeta / meses;
+
+  // Categorías de costos fijos
+  const cats = {
+    "Personal":     ["Salarios"],
+    "Operaciones":  ["Manager Cargo","Shipday","Embalaje y tape","Combustible","Internet oficina","Cosas de oficina"],
+    "Instalaciones":["Luz","Renta oficina TGU"],
+    "Vehículos":    ["Pago Pickup","Pago SUV","Seguros de vehículo"],
+    "Publicidad":   ["Publicidad agencia","Valla publicitaria","Publicidad Meta","Publicidad TikTok"],
+  };
+
+  const catTotals = Object.entries(cats).map(([cat, items]) => {
+    const total = COSTOS_FIJOS.filter(c => items.includes(c.cat)).reduce((s,c)=>s+c.val,0);
+    return {cat, total};
+  });
+
+  // Monthly P&L table
+  const monthRows = monthly.map((m,i) => {
+    const cf = TOTAL_FIJOS;
+    const util = m.profit - cf;
+    const mn = m.rev > 0 ? (util/m.rev*100) : 0;
+    return `<tr>
+      <td style="font-weight:600">${m.label}</td>
+      <td style="color:#22c55e;font-weight:700">${fL(m.rev)}</td>
+      <td style="color:#ef4444">${fL(m.costo)}</td>
+      <td style="color:#a78bfa;font-weight:700">${fL(m.profit)}</td>
+      <td style="color:#f59e0b">${fL(cf)}</td>
+      <td style="color:${util>=0?'#4ade80':'#f87171'};font-weight:700">${fL(util)}</td>
+      <td style="color:${mn>=0?'#4ade80':'#f87171'};font-weight:600">${mn.toFixed(1)}%</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('tab-pl-f').innerHTML = `
+    <!-- KPIs principales -->
+    <div class="kpi-grid" style="margin-bottom:16px">
+      ${[
+        {l:'Revenue Total',v:fL(revTotal),c:'#22c55e',sub:`${fN(meses)} mes${meses>1?'es':''} · ${fL(Math.round(revMes))}/mes prom.`},
+        {l:'Profit Bruto (variable)',v:fL(profVar),c:'#a78bfa',sub:`Sin costos fijos · ${fL(Math.round(profVarMes))}/mes`},
+        {l:'Costos Fijos (${meses} mes${meses>1?'es':''})',v:fL(costosFijosPeriodo),c:'#f59e0b',sub:`L${TOTAL_FIJOS.toLocaleString('es-HN')}/mes fijos`},
+        {l:'Utilidad Neta Estimada',v:fL(utilidadNeta),c:utilidadNeta>=0?'#4ade80':'#f87171',sub:`Margen neto: ${margenNeto.toFixed(1)}% · ${fL(Math.round(utilMes))}/mes`},
+      ].map(k=>`<div class="kpi" style="border:1px solid ${k.c}30">
+        <div class="kpi-lbl">${k.l}</div>
+        <div class="kpi-val" style="color:${k.c}">${k.v}</div>
+        <div class="kpi-sub">${k.sub}</div>
+      </div>`).join('')}
+    </div>
+
+    <div class="two">
+      <!-- Costos fijos detalle editable -->
+      <div class="card">
+        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+          💼 Costos Fijos Mensuales
+          <span style="font-size:11px;color:#475569">Total: <b style="color:#f59e0b">${fL(TOTAL_FIJOS)}</b>/mes</span>
+        </div>
+        <div style="overflow-y:auto;max-height:360px">
+          <table>
+            <thead><tr><th>Categoría</th><th>Concepto</th><th style="text-align:right">Monto</th><th style="text-align:right">% del total</th></tr></thead>
+            <tbody>
+              ${COSTOS_FIJOS.map(c => {
+                const cat = Object.entries(cats).find(([k,v])=>v.includes(c.cat))?.[0]||'Otros';
+                const pct = (c.val/TOTAL_FIJOS*100).toFixed(1);
+                return `<tr>
+                  <td style="color:#475569;font-size:10px">${cat}</td>
+                  <td style="font-weight:500">${c.cat}</td>
+                  <td style="text-align:right;color:#f59e0b;font-weight:600">${fL(c.val)}</td>
+                  <td style="text-align:right;color:#334155">${pct}%</td>
+                </tr>`;
+              }).join('')}
+              <tr style="border-top:2px solid #1e293b">
+                <td colspan="2" style="font-weight:700;color:#f1f5f9">TOTAL FIJOS</td>
+                <td style="text-align:right;font-weight:700;color:#f59e0b;font-size:14px">${fL(TOTAL_FIJOS)}</td>
+                <td style="text-align:right;color:#475569">100%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Costos fijos por categoría -->
+      <div class="card">
+        <div class="card-title">📊 Costos Fijos por Categoría</div>
+        ${catTotals.map(c => {
+          const pct = (c.total/TOTAL_FIJOS*100).toFixed(1);
+          const colors = {'Personal':'#ef4444','Operaciones':'#0ea5e9','Instalaciones':'#f59e0b','Vehículos':'#22c55e','Publicidad':'#a855f7'};
+          const col = colors[c.cat]||'#94a3b8';
+          return `<div style="margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+              <span style="font-size:12px;font-weight:600;color:${col}">${c.cat}</span>
+              <span style="font-size:12px;font-weight:700;color:${col}">${fL(c.total)} <span style="color:#334155;font-weight:400">(${pct}%)</span></span>
+            </div>
+            <div style="height:6px;background:#0f2040;border-radius:4px">
+              <div style="height:100%;width:${pct}%;background:${col};border-radius:4px"></div>
+            </div>
+          </div>`;
+        }).join('')}
+
+        <div style="margin-top:20px;padding:14px;background:#060d1a;border-radius:10px;border:1px solid ${utilidadNeta>=0?'#22c55e40':'#ef444440'}">
+          <div style="font-size:11px;color:#475569;margin-bottom:6px">💡 Punto de equilibrio mensual</div>
+          <div style="font-size:13px;color:#f1f5f9">Necesitas generar mínimo <b style="color:#f59e0b">${fL(TOTAL_FIJOS)}</b> de profit bruto por mes para cubrir costos fijos.</div>
+          <div style="font-size:12px;color:#475569;margin-top:6px">Profit bruto promedio actual: <b style="color:${profVarMes>=TOTAL_FIJOS?'#4ade80':'#f87171'}">${fL(Math.round(profVarMes))}/mes</b>
+            ${profVarMes>=TOTAL_FIJOS ? ' ✅ Por encima del punto de equilibrio' : ' ⚠️ Por debajo del punto de equilibrio'}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P&L por mes -->
+    <div class="card">
+      <div class="card-title">📅 P&L Mensual Detallado</div>
+      <div style="font-size:11px;color:#475569;margin-bottom:12px">Revenue − Costos variables = Profit Bruto − Costos Fijos (L${TOTAL_FIJOS.toLocaleString('es-HN')}/mes) = Utilidad Neta</div>
+      <div style="overflow-x:auto"><table>
+        <thead><tr>
+          <th>Mes</th><th>Revenue</th><th>Costos Var.</th>
+          <th>Profit Bruto</th><th>Costos Fijos</th>
+          <th>Utilidad Neta</th><th>Margen Neto</th>
+        </tr></thead>
+        <tbody>${monthRows}</tbody>
+      </table></div>
+    </div>
+
+    <div style="padding:12px 16px;background:#0a1628;border:1px solid #1e293b;border-radius:10px;font-size:11px;color:#334155">
+      ⚠️ Utilidad estimada — basada en costos de flete promedio por libra. Los costos fijos son los que configuraste. Actualiza los montos directamente en el código si cambian.
+    </div>`;
+}
+
+function showTabF(n,btn){
+  ['ov','sv','pending','clients','trend','pl'].forEach(t=>document.getElementById('tab-'+t).style.display=t===n?'block':'none');
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+
+async function initFinanciero(){
+  const rows = await fbLoad(FB_URL_F, 'fb-dot-f', 'fb-txt-f');
+  if(rows && rows.length){
+    RAW = rows;
+    document.getElementById('up-f').style.display = 'none';
+    document.getElementById('dash-f').style.display = 'block';
+    document.getElementById('f-upload-title').textContent = '+ Agregar más datos';
+    initDashF();
+  } else {
+    setFbStatus('fb-dot-f','fb-txt-f','empty','Sin datos en Firebase');
+  }
+  const ulabel = document.getElementById('ulabel-f');
+  const finput = document.getElementById('finput-f');
+  ulabel.addEventListener('dragover',e=>e.preventDefault());
+  ulabel.addEventListener('drop',e=>{e.preventDefault();loadFileF(e.dataTransfer.files[0]);});
+  finput.addEventListener('change',e=>loadFileF(e.target.files[0]));
+}
+
+</script>
+</body>
+</html>
