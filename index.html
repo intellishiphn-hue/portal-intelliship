@@ -249,6 +249,10 @@ tbody tr.clickable:hover td{background:var(--accent-soft);}
         <div class="navitem" data-view="prealertas" data-mod="prealertas">Prealertas</div>
       </div>
       <div class="rail-group">
+        <div class="glabel">Mi agencia</div>
+        <div class="navitem" data-view="salidaAgencia" data-mod="salidaAgencia">Entregar a mi cliente</div>
+      </div>
+      <div class="rail-group">
         <div class="glabel">Inteligencia</div>
         <div class="navitem" data-view="analitica" data-mod="analitica">Analítica</div>
         <div class="navitem" data-view="reportes" data-mod="reportes">Reportería</div>
@@ -291,7 +295,20 @@ tbody tr.clickable:hover td{background:var(--accent-soft);}
           </div>
           <div class="hint">Numeración consecutiva y automática, nunca se repite. Si ya hay uno abierto de ese tipo, ciérrelo primero.</div>
         </div>
+        <div class="toolbar" style="margin-bottom:16px;">
+          <input type="text" id="consBuscar" placeholder="Buscar consolidado por número o tipo…">
+          <select id="consFiltroEstado"><option value="">Todos los estados</option><option value="abierto">Solo abiertos</option><option value="cerrado">Solo cerrados</option></select>
+          <div class="spacer"></div>
+          <div class="segmented" id="segVistaConsolidados">
+            <div class="s active" data-vista="grid">▦ Cuadrícula</div>
+            <div class="s" data-vista="lista">☰ Lista</div>
+          </div>
+        </div>
         <div class="conscard-grid" id="consolidadosGrid"></div>
+        <div class="card" id="consolidadosListaTablaWrap" style="display:none;padding:0;overflow-x:auto;">
+          <table><thead><tr><th>Consolidado</th><th>Tipo</th><th>Estado</th><th>Status</th><th>Paquetes</th><th>Sin facturar</th></tr></thead>
+          <tbody id="consolidadosListaTabla"></tbody></table>
+        </div>
       </div>
       <div id="consolidadoDetalle" style="display:none;"></div>
     </div>
@@ -304,7 +321,7 @@ tbody tr.clickable:hover td{background:var(--accent-soft);}
         <select id="revConsolidado"><option value="">Consolidado: todos</option></select>
         <select id="revServicio"><option value="">Servicio: todos</option><option>Standard</option><option>Marítimo</option><option>Express</option></select>
         <select id="revFacturado"><option value="">Facturado: todos</option><option value="si">Facturado</option><option value="no">Sin facturar</option></select>
-        <select id="revUbic"><option value="">Ubicación: todas</option><option value="si">Ubicado</option><option value="no">Sin ubicar</option></select>
+        <select id="revUbic" style="display:none;"><option value="">Ubicación: todas</option><option value="si">Ubicado</option><option value="no">Sin ubicar</option></select>
         <select id="revAgencia"><option value="">Agencia: todas</option></select>
         <select id="revOrden">
           <option value="default">Ordenar: más reciente</option>
@@ -318,7 +335,7 @@ tbody tr.clickable:hover td{background:var(--accent-soft);}
       </div>
       <div class="card" style="padding:0;overflow-x:auto;">
         <table id="tablaRevision"><thead><tr>
-          <th>Recibo (WR)</th><th>Cliente</th><th>Consolidado</th><th>Servicio</th><th>Agencia</th><th>Peso</th><th>Facturado</th><th>Ubicación</th><th>Status</th>
+          <th>Recibo (WR)</th><th>Cliente</th><th>Consolidado</th><th>Servicio</th><th>Agencia</th><th>Peso</th><th id="thFacturado">Facturado</th><th id="thUbicacion" style="display:none;">Ubicación</th><th>Status</th>
         </tr></thead><tbody></tbody></table>
       </div>
     </div>
@@ -404,6 +421,25 @@ tbody tr.clickable:hover td{background:var(--accent-soft);}
       </div>
     </div>
 
+    <!-- ===================== SALIDA SIMPLE PARA AGENCIAS ===================== -->
+    <div class="view" id="v-salidaAgencia">
+      <div class="topbar"><div><h1>Entregar a mi cliente</h1><div class="sub">Escanee el paquete y capture la firma al momento de entregarlo.</div></div></div>
+      <div class="grid2">
+        <div class="card">
+          <h3>Escanear paquete (WR)</h3>
+          <div class="scanbox"><input type="text" id="salidaAgScan" placeholder="Escanear WR…" autocomplete="off"></div>
+          <div id="salidaAgLista"></div>
+        </div>
+        <div class="card">
+          <h3>Firma del cliente</h3>
+          <canvas id="firmaAgCanvas" width="380" height="220" style="background:var(--border-soft);border:1.5px dashed var(--border);border-radius:var(--radius);width:100%;touch-action:none;cursor:crosshair;"></canvas>
+          <div style="display:flex;gap:8px;margin-top:12px;"><button class="btn ghost sm" id="btnLimpiarFirmaAg">Limpiar firma</button></div>
+          <div class="field" style="margin-top:14px;"><label>Marcar como</label><select id="salidaAgStatus"></select></div>
+          <button class="btn primary" id="btnConfirmarSalidaAg" style="width:100%;margin-top:6px;">Confirmar entrega (<span id="salidaAgCountBtn">0</span>)</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ===================== DESPACHO ===================== -->
     <div class="view" id="v-despacho">
       <div class="topbar"><div><h1>Despacho de hoy</h1><div class="sub">Qué paquetes salen, para dónde y con quién. Solo lo esencial.</div></div></div>
@@ -412,11 +448,16 @@ tbody tr.clickable:hover td{background:var(--accent-soft);}
         <div class="p" data-desptab="domicilio_tgu">Delivery en TGU</div>
         <div class="p" data-desptab="nacional">Envío nacional</div>
       </div>
-      <div class="toolbar" id="despachoFiltrosNacional" style="display:none;">
+      <div class="pillnav" style="background:transparent;padding:0;gap:8px;">
+        <div class="p active" data-despsub="pendientes" style="background:var(--border-soft);">Pendientes</div>
+        <div class="p" data-despsub="historial" style="background:var(--border-soft);">Historial</div>
+      </div>
+      <div style="height:12px;"></div>
+      <div class="toolbar" id="despachoFiltros">
         <label style="margin:0;">Día</label>
         <input type="date" id="despFecha">
-        <label style="margin:0;">Paquetera</label>
-        <select id="despPaquetera">
+        <label style="margin:0;display:none;" id="despPaqueteraLabel">Paquetera</label>
+        <select id="despPaquetera" style="display:none;">
           <option value="">Todas</option>
           <option value="C807">C807</option>
           <option value="Cargo Expresso">Cargo Expresso</option>
@@ -508,7 +549,7 @@ tbody tr.clickable:hover td{background:var(--accent-soft);}
     <div class="view" id="v-prealertas">
       <div class="topbar"><div><h1>Prealertas</h1><div class="sub">Registradas por los clientes desde la app. Editables, incluyendo el tipo de servicio.</div></div></div>
       <div class="card" style="padding:0;overflow-x:auto;">
-        <table><thead><tr><th>Cliente</th><th>Tracking declarado</th><th>Tienda</th><th>Contenido</th><th>Valor decl.</th><th>Servicio</th><th></th></tr></thead>
+        <table><thead><tr><th>Fecha</th><th>Cliente</th><th>Tracking declarado</th><th>Tienda</th><th>Contenido</th><th>Valor decl.</th><th>Servicio</th><th></th></tr></thead>
         <tbody id="prealertasBody"></tbody></table>
       </div>
     </div>
@@ -590,6 +631,15 @@ tbody tr.clickable:hover td{background:var(--accent-soft);}
     <!-- ===================== AGENCIAS ===================== -->
     <div class="view" id="v-agencias">
       <div class="topbar"><div><h1>Agencias</h1><div class="sub">Solo Master. Contacto para avisos y tarifas por tipo de servicio para cada agencia.</div></div></div>
+      <div class="card" style="margin-bottom:18px;border-color:var(--accent);">
+        <h3 style="font-size:13.5px;">Cómo probar el flujo completo (datos de ejemplo ya cargados)</h3>
+        <div style="font-size:12.5px;color:var(--ink-dim);line-height:1.9;">
+          <div>1. Vaya a <b>Consolidados → 003</b>: tiene 3 paquetes de <b>LOGISTEX</b> ya ubicados en TGU. Pruebe el botón "Notificar a LOGISTEX" — genera su factura automáticamente.</div>
+          <div>2. En ese mismo consolidado hay un paquete de <b>ENCARGHO</b> con un status propio de ellos — vea cómo aparece de solo lectura para nosotros.</div>
+          <div>3. En <b>Usuarios & permisos</b>, use "Vista previa" sobre el usuario de LOGISTEX para ver el panel exactamente como lo ve la agencia (sin ubicaciones, con sus propios status, y su portal de facturas).</div>
+          <div>4. En <b>Facturas → Facturar a agencias</b> ya hay ejemplos con los 3 estados posibles: pendiente de pago, comprobante en revisión, y aprobada.</div>
+        </div>
+      </div>
       <div class="grid2">
         <div class="card" style="padding:0;overflow-x:auto;">
           <table><thead><tr><th>Agencia</th><th>WhatsApp</th><th>Correo</th><th>Tarifa</th><th></th></tr></thead>
@@ -705,12 +755,13 @@ const CIUDADES = ["Tegucigalpa","San Pedro Sula","La Ceiba","Choluteca","Comayag
 const NOMBRES = ["Carlos Mendoza","María Fernández","José Rivera","Ana Lucía Cáceres","Luis Enrique Paz","Karla Suyapa Zúniga","Roberto Núñez","Daniela Ordóñez","Óscar Bonilla","Fátima Andino","Douglas Matute","Wendy Aguilar","Marlon Erazo","Gabriela Turcios","Ever Maradiaga"];
 const TIENDAS = ["Amazon","Shein","Walmart","Best Buy","Target","eBay"];
 let agenciasData = [
-  {nombre:'LOGISTEX', whatsapp:'+504 9999-0001', correo:'gerencia@logistex.hn', tarifa:{}},
-  {nombre:'ENCARGHO', whatsapp:'+504 9999-0002', correo:'gerencia@encargho.hn', tarifa:{}},
-  {nombre:'CONNECT', whatsapp:'+504 9999-0003', correo:'gerencia@connect.hn', tarifa:{}},
+  {nombre:'LOGISTEX', whatsapp:'+504 9999-0001', correo:'gerencia@logistex.hn', tarifa:{}, statusesPropios:['Entregado a motorista','Entregado al cliente']},
+  {nombre:'ENCARGHO', whatsapp:'+504 9999-0002', correo:'gerencia@encargho.hn', tarifa:{}, statusesPropios:['En reparto','Entregado al cliente']},
+  {nombre:'CONNECT', whatsapp:'+504 9999-0003', correo:'gerencia@connect.hn', tarifa:{}, statusesPropios:['Entregado al cliente']},
 ];
 function nombresAgencias(){ return agenciasData.map(a=>a.nombre); }
 function todasAgenciasIncluyendoIntelliship(){ return ['INTELLISHIP', ...nombresAgencias()]; }
+function esStatusBase(status){ return statusesDisponibles.includes(status); }
 function getAgenciaData(nombre){ return agenciasData.find(a=>a.nombre===nombre); }
 function tarifaMaritimoBase(peso){
   const c = state.configuracion;
@@ -722,11 +773,18 @@ let statusesDisponibles = ['En tránsito','En aduanas',STATUS_LISTO,'Entregado']
 function renderStatusOptions(selected, disableListo){
   return statusesDisponibles.map(s=>`<option ${s===selected?'selected':''} ${(disableListo&&s===STATUS_LISTO)?'disabled':''}>${s}</option>`).join('');
 }
+function renderStatusOptionsAgencia(selected, agenciaNombre){
+  const ag = getAgenciaData(agenciaNombre);
+  const propios = ag ? ag.statusesPropios : [];
+  let html = '<optgroup label="Compartidos con INTELLISHIP">' + statusesDisponibles.map(s=>`<option ${s===selected?'selected':''}>${s}</option>`).join('') + '</optgroup>';
+  html += '<optgroup label="Propios de '+agenciaNombre+'">' + propios.map(s=>`<option ${s===selected?'selected':''}>${s}</option>`).join('') + '</optgroup>';
+  return html;
+}
 const MODULOS = [
   {key:'consolidados', label:'Consolidados e ingreso'}, {key:'revision', label:'Revisar paquetes'},
   {key:'bodega', label:'Estantes & repisas'}, {key:'ubicar', label:'Ubicar paquetes'},
   {key:'salida', label:'Dar salida'}, {key:'recepcion', label:'Entrega con firma'}, {key:'despacho', label:'Despacho de hoy'},
-  {key:'pagos', label:'Pagos'}, {key:'facturas', label:'Facturas'},
+  {key:'pagos', label:'Pagos'}, {key:'facturas', label:'Facturas'}, {key:'salidaAgencia', label:'Entregar a mi cliente (agencia)'},
   {key:'clientes', label:'Clientes & tarifas'}, {key:'prealertas', label:'Prealertas'},
   {key:'analitica', label:'Analítica'}, {key:'reportes', label:'Reportería'},
   {key:'notif', label:'Notificaciones'}, {key:'usuarios', label:'Usuarios & permisos'}, {key:'agencias', label:'Agencias'}, {key:'configuracion', label:'Configuración'},
@@ -736,7 +794,7 @@ const ROLE_PRESETS = {
   'Bodega Honduras': ['bodega','ubicar','salida','recepcion','despacho'],
   'Despacho': ['despacho'],
   'Coordinador': ['consolidados','revision','bodega','ubicar','salida','recepcion','despacho','pagos','facturas','clientes','prealertas','analitica','notif'],
-  'Agencia': ['consolidados','revision','clientes','facturas'],
+  'Agencia': ['consolidados','revision','clientes','facturas','salidaAgencia'],
   'Master': MODULOS.map(m=>m.key),
 };
 
@@ -814,6 +872,25 @@ function seed(){
   });
   state.nextWR = wrCount+1;
 
+  // ===== Ejemplos garantizados para entender el módulo de Agencias =====
+  // 1) LOGISTEX: 3 paquetes en el consolidado 003 (Express, ya listo), los 3 ubicados en TGU
+  //    -> al entrar a Consolidados > 003 se puede ver y probar el botón "Notificar a LOGISTEX"
+  const paqDemoLogistex = state.paquetes.filter(p=>p.consolidado==='003' && p.agencia==='INTELLISHIP').slice(0,3);
+  paqDemoLogistex.forEach(p=>{
+    p.agencia = 'LOGISTEX'; p.status = STATUS_LISTO;
+    if(!p.ubicacion){
+      const est = state.estantes[0];
+      const rep = est.repisas.find(r=>r.ocupados<5) || est.repisas[0];
+      p.ubicacion = {estante: est.numero, repisa: rep.id}; rep.ocupados++;
+    }
+  });
+  // 2) ENCARGHO: un paquete que ya tiene un status "propio" de la agencia (ya no está en bodega)
+  //    -> al verlo como Master aparece de solo lectura ("gestionado por ENCARGHO")
+  const pEncargho = state.paquetes.find(p=>p.agencia==='INTELLISHIP' && p.consolidado!=='003');
+  if(pEncargho){ pEncargho.agencia='ENCARGHO'; pEncargho.status = getAgenciaData('ENCARGHO').statusesPropios[0]; pEncargho.ubicacion=null; }
+  // 3) CONNECT: un par de paquetes normales, todavía en proceso, para que también tenga presencia
+  state.paquetes.filter(p=>p.agencia==='INTELLISHIP').slice(0,2).forEach(p=>{ p.agencia='CONNECT'; });
+
   ['BAC','Ficohsa','Banpaís','Atlántida','Occidente'].forEach((banco,i)=>{
     state.transferencias.push({id:uid('TR-'), cliente:rnd(state.clientes).nombre, monto:+(300+Math.random()*2500).toFixed(2),
       bancoSugerido:banco, fecha:new Date(Date.now()-i*3600000).toLocaleString('es-HN'), comprobante:'comprobante_'+(i+1)+'.jpg', estado:'pendiente'});
@@ -826,9 +903,11 @@ function seed(){
       respuestaPixelPay: ok? 'APPROVED · issuer_response=00' : 'DECLINED · issuer_response=05 (fondos insuficientes)'});
   }
   for(let i=0;i<5;i++){
+    const fechaTS = Date.now() - Math.floor(Math.random()*10)*86400000;
     state.prealertas.push({id:uid('PA-'), cliente:rnd(state.clientes).nombre, tracking:'1Z'+Math.floor(10000000+Math.random()*89999999),
       tienda:rnd(TIENDAS), contenido:rnd(['Ropa','Electrónico','Zapatos','Accesorios de cocina','Juguetes']),
-      valor:+(15+Math.random()*350).toFixed(2), servicio:rnd(['Standard','Marítimo','Express'])});
+      valor:+(15+Math.random()*350).toFixed(2), servicio:rnd(['Standard','Marítimo','Express']),
+      fecha: new Date(fechaTS).toLocaleDateString('es-HN'), fechaTS});
   }
   // aseguramos que al menos una prealerta no calce con el consolidado activo para poder mostrar el aviso
   state.prealertas[0].servicio = 'Marítimo';
@@ -878,6 +957,26 @@ function seed(){
     });
   });
 
+  // Ejemplos garantizados para Recoge en oficina y Delivery en TGU (para que la demo de Despacho nunca quede vacía)
+  const ejemplosOtrosDespacho = [
+    {entregaTipo:'oficina', diasAtras:0}, {entregaTipo:'oficina', diasAtras:1},
+    {entregaTipo:'domicilio_tgu', diasAtras:0}, {entregaTipo:'domicilio_tgu', diasAtras:2},
+  ];
+  ejemplosOtrosDespacho.forEach(ej=>{
+    const pick = pickClienteConPaquetes(1,false);
+    if(!pick) return;
+    const {cli, paq} = pick;
+    paq.forEach(p=>{ p.facturado=true; cambiarStatus(p, STATUS_LISTO); });
+    const fechaTS = Date.now() - ej.diasAtras*86400000;
+    state.facturas.push({
+      id:uid('FAC-'), folio:'F-'+pad(state.nextFolio++,6), cliente:cli.nombre, casillero:cli.casillero,
+      fecha:new Date(fechaTS).toLocaleString('es-HN'), fechaTS,
+      paquetes: paq.map(p=>p.codigoBodega), domicilio: ej.entregaTipo==='domicilio_tgu', entregaTipo:ej.entregaTipo, paquetera:null, empacado:false,
+      formaPago:'Tarjeta', transferenciaId:null, origen:'cliente',
+      montoTotal:+paq.reduce((a,p)=>a+tarifaParaPaquete(p,cli).monto,0).toFixed(2),
+    });
+  });
+
   for(let i=0;i<8;i++){
     const cli = rnd(state.clientes);
     const disponibles = state.paquetes.filter(p=>p.cliente===cli.nombre && p.agencia==='INTELLISHIP' && !p.facturado);
@@ -906,17 +1005,17 @@ function seed(){
   state.usuarios.push({id:uid('US-'), nombre:'Coordinador Operaciones', correo:'coordinacion@intellishiphn.com', rol:'Coordinador', modulos:ROLE_PRESETS['Coordinador']});
   state.usuarios.push({id:uid('US-'), nombre:'Usuario LOGISTEX', correo:'contacto@logistex.com', rol:'Agencia', agencia:'LOGISTEX', modulos:ROLE_PRESETS['Agencia']});
 
-  // ejemplos de facturación a agencias
-  ['LOGISTEX','ENCARGHO'].forEach((nombreAg, i)=>{
+  // ejemplos de facturación a agencias — uno de cada estado posible, para que se entienda el flujo completo
+  ['LOGISTEX','ENCARGHO','CONNECT'].forEach((nombreAg, i)=>{
     const disp = state.paquetes.filter(p=>p.agencia===nombreAg && !p.facturado && !p.pendienteAsignar).slice(0,2);
     if(!disp.length) return;
     let total=0; disp.forEach(p=>{ total+=tarifaParaPaqueteAgencia(p,nombreAg).monto; p.facturado=true; });
     const factura = {id:uid('FAG-'), folio:'FA-'+pad(state.nextFolioAgencia++,6), agencia:nombreAg, fecha:new Date(Date.now()-i*86400000).toLocaleString('es-HN'), fechaTS:Date.now()-i*86400000,
-      paquetes:disp.map(p=>p.codigoBodega), montoTotal:+total.toFixed(2), estado: i===0?'en_revision':'pendiente_pago', transferenciaId:null};
-    if(i===0){
+      paquetes:disp.map(p=>p.codigoBodega), montoTotal:+total.toFixed(2), estado: i===0?'en_revision':(i===1?'pendiente_pago':'en_revision'), transferenciaId:null};
+    if(i===0 || i===2){
       const trId = uid('TR-');
       state.transferencias.push({id:trId, cliente:nombreAg+' (agencia)', agencia:nombreAg, monto:factura.montoTotal, bancoSugerido:'BAC',
-        fecha:factura.fecha, comprobante:'comprobante_'+factura.folio+'.jpg', estado:'pendiente'});
+        fecha:factura.fecha, comprobante:'comprobante_'+factura.folio+'.jpg', estado: i===2?'aprobado':'pendiente'});
       factura.transferenciaId = trId;
     }
     state.facturasAgencia.push(factura);
@@ -939,6 +1038,7 @@ document.querySelectorAll('.navitem').forEach(item=>{
     item.classList.add('active');
     document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
     document.getElementById('v-'+item.dataset.view).classList.add('active');
+    try{ localStorage.setItem('intelliship_lastView', item.dataset.view); }catch(e){}
     renderAll();
   });
 });
@@ -986,22 +1086,67 @@ document.getElementById('btnCrearConsolidado').addEventListener('click', ()=>{
   toast('Consolidado '+id+' ('+tipo+') creado y abierto');
   renderConsolidadosGrid(); abrirConsolidado(id);
 });
+let consVistaModo = 'grid';
+document.getElementById('segVistaConsolidados').addEventListener('click', (e)=>{
+  const s = e.target.closest('.s'); if(!s) return;
+  document.querySelectorAll('#segVistaConsolidados .s').forEach(x=>x.classList.remove('active')); s.classList.add('active');
+  consVistaModo = s.dataset.vista; renderConsolidadosGrid();
+});
+document.getElementById('consBuscar').addEventListener('input', renderConsolidadosGrid);
+document.getElementById('consFiltroEstado').addEventListener('input', renderConsolidadosGrid);
 function renderConsolidadosGrid(){
   const grid = document.getElementById('consolidadosGrid');
+  const tablaWrap = document.getElementById('consolidadosListaTablaWrap');
+  const tablaBody = document.getElementById('consolidadosListaTabla');
   const crearCard = document.getElementById('crearConsolidadoCard');
   if(crearCard) crearCard.style.display = state.previewAgencia ? 'none' : 'block';
-  grid.innerHTML = state.consolidados.slice().reverse().map(c=>{
+  grid.style.display = consVistaModo==='grid' ? 'grid' : 'none';
+  tablaWrap.style.display = consVistaModo==='lista' ? 'block' : 'none';
+
+  const q = (document.getElementById('consBuscar').value||'').trim().toLowerCase();
+  const fEstado = document.getElementById('consFiltroEstado').value;
+  let lista = state.consolidados.slice().reverse().filter(c=>{
+    if(q && !(c.id.toLowerCase().includes(q) || c.tipo.toLowerCase().includes(q))) return false;
+    if(fEstado && c.estadoApertura!==fEstado) return false;
+    return true;
+  });
+
+  const filas = lista.map(c=>{
     const paquetes = state.paquetes.filter(p=>p.consolidado===c.id && (!state.previewAgencia || p.agencia===state.previewAgencia));
-    if(state.previewAgencia && !paquetes.length) return '';
-    const sinFacturar = paquetes.filter(p=>!p.facturado).length;
-    return `<div class="conscard ${c.estadoApertura==='cerrado'?'cerrado':''}" data-id="${c.id}">
-      <span class="apertura-chip ${c.estadoApertura}">${c.estadoApertura==='abierto'?'Abierto':'Cerrado'}</span>
-      <div class="cn">${c.id}</div><div class="ct">${c.tipo}</div>
-      <div style="margin-top:10px;font-size:11.5px;color:var(--ink-dim);line-height:1.4;">${c.status}</div>
-      <div style="margin-top:12px;font-size:12px;color:var(--ink-dim);">${paquetes.length} paquete(s) · ${sinFacturar} sin facturar</div>
-    </div>`;
-  }).join('') || (state.previewAgencia? '<div class="empty">Su agencia no tiene paquetes en ningún consolidado todavía.</div>' : '');
-  grid.querySelectorAll('.conscard').forEach(c=>c.addEventListener('click', ()=>abrirConsolidado(c.dataset.id)));
+    return {c, paquetes};
+  }).filter(({paquetes})=> !state.previewAgencia || paquetes.length);
+
+  if(!filas.length){
+    const msg = state.previewAgencia? 'Su agencia no tiene paquetes en ningún consolidado todavía.' : 'No se encontraron consolidados con ese criterio.';
+    grid.innerHTML = consVistaModo==='grid' ? `<div class="empty">${msg}</div>` : '';
+    tablaBody.innerHTML = consVistaModo==='lista' ? `<tr><td colspan="6"><div class="empty">${msg}</div></td></tr>` : '';
+    return;
+  }
+
+  if(consVistaModo==='grid'){
+    grid.innerHTML = filas.map(({c, paquetes})=>{
+      const sinFacturar = paquetes.filter(p=>!p.facturado).length;
+      return `<div class="conscard ${c.estadoApertura==='cerrado'?'cerrado':''}" data-id="${c.id}">
+        <span class="apertura-chip ${c.estadoApertura}">${c.estadoApertura==='abierto'?'Abierto':'Cerrado'}</span>
+        <div class="cn">${c.id}</div><div class="ct">${c.tipo}</div>
+        <div style="margin-top:10px;font-size:11.5px;color:var(--ink-dim);line-height:1.4;">${c.status}</div>
+        <div style="margin-top:12px;font-size:12px;color:var(--ink-dim);">${paquetes.length} paquete(s) · ${sinFacturar} sin facturar</div>
+      </div>`;
+    }).join('');
+    grid.querySelectorAll('.conscard').forEach(c=>c.addEventListener('click', ()=>abrirConsolidado(c.dataset.id)));
+  } else {
+    tablaBody.innerHTML = filas.map(({c, paquetes})=>{
+      const sinFacturar = paquetes.filter(p=>!p.facturado).length;
+      return `<tr class="clickable" data-id="${c.id}">
+        <td><b class="mono">${c.id}</b></td><td>${c.tipo}</td>
+        <td><span class="apertura-chip ${c.estadoApertura}" style="position:static;display:inline-block;">${c.estadoApertura==='abierto'?'Abierto':'Cerrado'}</span></td>
+        <td><span class="badge mute wrap">${c.status}</span></td>
+        <td class="mono">${paquetes.length}</td>
+        <td class="mono">${sinFacturar}</td>
+      </tr>`;
+    }).join('');
+    tablaBody.querySelectorAll('tr.clickable').forEach(tr=>tr.addEventListener('click', ()=>abrirConsolidado(tr.dataset.id)));
+  }
 }
 function abrirConsolidado(id){
   state.consolidadoAbierto = id;
@@ -1046,10 +1191,10 @@ function renderConsolidadoDetalle(){
     </div>
     ${(!abierto && !esVistaAgencia)? '<div class="warnbox show">Este consolidado está cerrado — ya no se pueden ingresar paquetes nuevos, solo consultar y cambiar status.</div>' : ''}
 
-    <div class="resumen3">
+    <div class="resumen3" style="${esVistaAgencia?'grid-template-columns:1fr 1fr;':''}">
       <div class="rc"><div class="rk">Paquetes en el consolidado</div><div class="rv">${paquetes.length}</div></div>
       <div class="rc"><div class="rk">Peso total</div><div class="rv">${totalPeso.toFixed(1)} lb</div></div>
-      <div class="rc"><div class="rk">Ubicados en TGU</div><div class="rv" style="color:${pendientesUbicar.length?'var(--amber)':'var(--green)'};">${ubicados.length} / ${paquetes.length}</div></div>
+      ${esVistaAgencia? '' : `<div class="rc"><div class="rk">Ubicados en TGU</div><div class="rv" style="color:${pendientesUbicar.length?'var(--amber)':'var(--green)'};">${ubicados.length} / ${paquetes.length}</div></div>`}
     </div>
 
     ${esVistaAgencia? '' : `<div class="toolbar">
@@ -1068,15 +1213,18 @@ function renderConsolidadoDetalle(){
         <option value="facturado">Facturado primero</option>
         <option value="wr">Recibo WR</option>
       </select>
-      ${esVistaAgencia?'':`<label style="margin:0;display:flex;align-items:center;gap:6px;"><input type="checkbox" class="check" id="chkOcultarAgencias" ${ocultarAgenciasEnConsolidado?'checked':''}> Ocultar paquetes de agencias externas</label>
+      ${esVistaAgencia?`<div class="spacer"></div>
+      <input type="text" id="nuevoStatusAgTexto" placeholder="Nombre de su nuevo status…" style="width:220px;">
+      <button class="btn ghost sm" id="btnAgregarStatusAg">+ Crear status propio</button>` : `<label style="margin:0;display:flex;align-items:center;gap:6px;"><input type="checkbox" class="check" id="chkOcultarAgencias" ${ocultarAgenciasEnConsolidado?'checked':''}> Ocultar paquetes de agencias externas</label>
       <div class="spacer"></div>
       <input type="text" id="nuevoStatusTexto" placeholder="Nombre de status nuevo…" style="width:220px;">
       <button class="btn ghost sm" id="btnAgregarStatus">+ Agregar status</button>`}
     </div>
+    ${esVistaAgencia? `<div class="hint" style="margin-top:-6px;margin-bottom:10px;">Los status "Compartidos con INTELLISHIP" reflejan el manejo logístico hasta que recogen el paquete. Los "Propios de ${state.previewAgencia}" son solo suyos, para reflejar la entrega a sus clientes.</div>` : ''}
     <div class="card" style="padding:0;overflow-x:auto;">
       <table><thead><tr>
         ${esVistaAgencia?'':'<th style="width:30px;"><input type="checkbox" class="check" id="chkAll"></th>'}
-        <th>Recibo (WR)</th><th>Cliente</th><th>Agencia</th><th>Peso</th><th>Facturado</th><th>Status individual</th><th></th>
+        <th>Recibo (WR)</th><th>Cliente</th><th>Agencia</th><th>Peso</th><th>${esVistaAgencia?'Facturado por INTELLISHIP':'Facturado'}</th><th>Status individual</th><th></th>
       </tr></thead><tbody id="consTablaBody"></tbody></table>
       ${esVistaAgencia?'':`<div style="padding:14px 18px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
         <span class="mono" style="font-size:11.5px;color:var(--ink-mute);" id="consSelCount">0 seleccionados</span>
@@ -1085,17 +1233,17 @@ function renderConsolidadoDetalle(){
     </div>
 
     <div style="height:18px;"></div>
-    ${pendientesUbicar.length ? `
+    ${esVistaAgencia ? '' : (pendientesUbicar.length ? `
     <div class="card" style="border-color:var(--amber);">
       <h3 style="font-size:13.5px;">Conciliación · faltan por ubicar en TGU <span class="tag">${pendientesUbicar.length} de ${paquetes.length}</span></h3>
       <div class="hint" style="margin-bottom:8px;">Miami reporta haber ingresado estos paquetes, pero aún no aparecen ubicados en una repisa de TGU. Revise antes de notificar a los clientes.</div>
       ${pendientesUbicar.map(p=>`<div style="font-size:12.5px;padding:6px 0;border-bottom:1px solid var(--border-soft);"><span class="tk">${p.codigoBodega}</span> · ${p.cliente}</div>`).join('')}
-    </div>` : (paquetes.length? `<div class="split-note">✔ Los ${paquetes.length} paquetes de este consolidado ya están ubicados en TGU. Puede notificar con confianza.</div>` : '')}
+    </div>` : (paquetes.length? `<div class="split-note">✔ Los ${paquetes.length} paquetes de este consolidado ya están ubicados en TGU. Puede notificar con confianza.</div>` : ''))}
 
     ${(!esVistaAgencia && resumenPorAgencia.length) ? `
     <div style="height:14px;"></div>
     <div class="card">
-      <h3 style="font-size:13.5px;">Aviso a agencias externas <span class="tag">solo se notifica cuando el 100% de sus paquetes está ubicado</span></h3>
+      <h3 style="font-size:13.5px;">Aviso a agencias externas <span class="tag">al notificar se genera automáticamente su factura pendiente</span></h3>
       ${resumenPorAgencia.map(r=>{
         const ag = getAgenciaData(r.nombreAg);
         return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-soft);flex-wrap:wrap;gap:8px;">
@@ -1111,8 +1259,19 @@ function renderConsolidadoDetalle(){
     b.addEventListener('click', ()=>{
       const nombreAg = b.dataset.agencia;
       const ag = getAgenciaData(nombreAg);
-      state.notificaciones.unshift({fecha:new Date().toLocaleString('es-HN'), cliente:nombreAg+' (agencia)', evento:'Consolidado '+cons.id+' completo — todos sus paquetes ya están ubicados en TGU', canales:'WhatsApp + Correo (gerencia de la agencia)'});
-      toast('Aviso enviado a '+nombreAg+' — WhatsApp '+(ag?ag.whatsapp:'')+' y correo '+(ag?ag.correo:'')+'.');
+      const paqAFacturar = state.paquetes.filter(p=>p.consolidado===cons.id && p.agencia===nombreAg && !p.facturado && !p.pendienteAsignar);
+      let mensajeFactura = '';
+      if(paqAFacturar.length){
+        let total=0;
+        paqAFacturar.forEach(p=>{ total+=tarifaParaPaqueteAgencia(p,nombreAg).monto; p.facturado=true; });
+        const folio = 'FA-'+pad(state.nextFolioAgencia++,6);
+        state.facturasAgencia.unshift({id:uid('FAG-'), folio, agencia:nombreAg, fecha:new Date().toLocaleString('es-HN'), fechaTS:Date.now(),
+          paquetes:paqAFacturar.map(p=>p.codigoBodega), montoTotal:+total.toFixed(2), estado:'pendiente_pago', transferenciaId:null,
+          nota:'Generada automáticamente al notificar el consolidado '+cons.id});
+        mensajeFactura = ' Se generó la factura '+folio+' por '+money(total)+', pendiente de pago.';
+      }
+      state.notificaciones.unshift({fecha:new Date().toLocaleString('es-HN'), cliente:nombreAg+' (agencia)', evento:'Consolidado '+cons.id+' completo — todos sus paquetes ya están ubicados en TGU'+(paqAFacturar.length?' · factura adjunta':''), canales:'WhatsApp + Correo (gerencia de la agencia)'});
+      toast('Aviso enviado a '+nombreAg+' — WhatsApp '+(ag?ag.whatsapp:'')+' y correo '+(ag?ag.correo:'')+'.'+mensajeFactura);
       renderAll();
     });
   });
@@ -1138,6 +1297,16 @@ function renderConsolidadoDetalle(){
     statusesDisponibles.push(val);
     toast('Status "'+val+'" agregado a la lista'); renderConsolidadoDetalle();
   });
+  const btnAgregarStatusAg = document.getElementById('btnAgregarStatusAg');
+  if(btnAgregarStatusAg) btnAgregarStatusAg.addEventListener('click', ()=>{
+    const val = document.getElementById('nuevoStatusAgTexto').value.trim();
+    if(!val){ toast('Escriba el nombre del nuevo status', true); return; }
+    const ag = getAgenciaData(state.previewAgencia);
+    if(!ag) return;
+    if(ag.statusesPropios.includes(val) || statusesDisponibles.includes(val)){ toast('Ese status ya existe', true); return; }
+    ag.statusesPropios.push(val);
+    toast('Status propio "'+val+'" creado para '+ag.nombre); renderConsolidadoDetalle();
+  });
   const selNuevoStatus = document.getElementById('consNuevoStatus');
   if(selNuevoStatus){
     selNuevoStatus.value = cons.status;
@@ -1162,6 +1331,16 @@ function renderConsolidadoDetalle(){
   else if(consSortBy==='wr') paquetesOrdenados.sort((a,b)=>a.codigoBodega.localeCompare(b.codigoBodega));
   tbody.innerHTML = paquetesOrdenados.map(p=>{
     const bloqueado = esAgenciaTerceros(p) && !state.previewAgencia;
+    const esPaqueteAgenciaAjena = esAgenciaTerceros(p) && !state.previewAgencia;
+    const statusEsPropioDeAgencia = esPaqueteAgenciaAjena && !esStatusBase(p.status);
+    let celdaStatus;
+    if(esVistaAgencia){
+      celdaStatus = `<select class="statusRowSel" data-wr="${p.codigoBodega}" style="width:auto;padding:5px 8px;font-size:12px;">${renderStatusOptionsAgencia(p.status, state.previewAgencia)}</select>`;
+    } else if(statusEsPropioDeAgencia){
+      celdaStatus = `<span class="badge purple wrap">${p.status}</span> <span class="hint" style="display:inline;">(gestionado por ${p.agencia})</span>`;
+    } else {
+      celdaStatus = `<select class="statusRowSel" data-wr="${p.codigoBodega}" style="width:auto;padding:5px 8px;font-size:12px;">${renderStatusOptions(p.status, bloqueado)}</select>`;
+    }
     return `<tr ${p.pendienteAsignar?'style="background:rgba(179,118,10,0.06);"':''}>
       ${esVistaAgencia?'':'<td><input type="checkbox" class="check consChk" data-wr="'+p.codigoBodega+'"></td>'}
       <td class="tk clickable-tk" data-wr="${p.codigoBodega}">${p.codigoBodega}</td>
@@ -1169,11 +1348,7 @@ function renderConsolidadoDetalle(){
       <td>${p.agencia==='INTELLISHIP'?'<span class="badge mute">INTELLISHIP</span>':'<span class="badge purple">'+p.agencia+'</span>'}</td>
       <td class="mono">${fmtL(p.peso)}</td>
       <td>${p.facturado? '<span class="badge green">Sí</span>' : '<span class="badge amber">No</span>'}</td>
-      <td>
-        <select class="statusRowSel" data-wr="${p.codigoBodega}" style="width:auto;padding:5px 8px;font-size:12px;">
-          ${renderStatusOptions(p.status, bloqueado)}
-        </select>
-      </td>
+      <td>${celdaStatus}</td>
       <td style="display:flex;gap:6px;">
         ${p.pendienteAsignar && !state.previewAgencia? `<button class="btn primary sm asignarClienteBtn" data-wr="${p.codigoBodega}">Asignar cliente</button>` : ''}
         ${state.previewAgencia?'':'<button class="btn ghost sm changeConsBtn" data-wr="'+p.codigoBodega+'">Mover</button>'}
@@ -1429,8 +1604,8 @@ function abrirDetallePaquete(codigoBodega, enfocarMover, enfocarCliente){
             <div><b style="color:var(--ink);">Peso real:</b> ${fmtL(p.peso)}</div>
             <div><b style="color:var(--ink);">Medidas:</b> ${p.largo?`${p.largo}" x ${p.ancho}" x ${p.alto}"`:'no registradas'}</div>
             ${vol?`<div><b style="color:var(--ink);">Peso volumétrico:</b> ${vol.toFixed(2)} lb &nbsp;|&nbsp; <b style="color:var(--ink);">Pies cúbicos:</b> ${pie3.toFixed(3)} ft³</div>`:''}
-            <div><b style="color:var(--ink);">Ubicación:</b> ${p.ubicacion?`Estante ${p.ubicacion.estante}, repisa ${p.ubicacion.repisa}`:'sin ubicar'}</div>
-            <div><b style="color:var(--ink);">Facturado:</b> ${p.facturado?'sí':'no'}</div>
+            ${soloLectura ? '' : `<div><b style="color:var(--ink);">Ubicación:</b> ${p.ubicacion?`Estante ${p.ubicacion.estante}, repisa ${p.ubicacion.repisa}`:'sin ubicar'}</div>`}
+            <div><b style="color:var(--ink);">${soloLectura?'Facturado por INTELLISHIP a su agencia':'Facturado'}:</b> ${p.facturado?'sí':'no'}</div>
           </div>
         </div>
         <div class="card" style="box-shadow:none;border-color:var(--border-soft);">
@@ -1520,15 +1695,27 @@ function mostrarEdicionPaquete(p, enfocarConsolidado, enfocarCliente){
    ========================================================================= */
 function refreshRevisionFilters(){
   document.getElementById('revConsolidado').innerHTML = '<option value="">Consolidado: todos</option>' + state.consolidados.map(c=>`<option value="${c.id}">${c.id}</option>`).join('');
-  document.getElementById('revAgencia').innerHTML = '<option value="">Agencia: todas</option>' + todasAgenciasIncluyendoIntelliship().map(a=>`<option value="${a}">${a}</option>`).join('');
+  const selAgencia = document.getElementById('revAgencia');
+  if(state.previewAgencia){
+    selAgencia.innerHTML = `<option value="${state.previewAgencia}">${state.previewAgencia}</option>`;
+    selAgencia.value = state.previewAgencia;
+    selAgencia.style.display = 'none';
+  } else {
+    selAgencia.style.display = '';
+    selAgencia.innerHTML = '<option value="">Agencia: todas</option>' + todasAgenciasIncluyendoIntelliship().map(a=>`<option value="${a}">${a}</option>`).join('');
+  }
 }
 function renderRevision(){
   refreshRevisionFilters();
+  const esVistaAgencia = !!state.previewAgencia;
+  document.getElementById('thUbicacion').style.display = esVistaAgencia ? 'none' : '';
+  document.getElementById('thFacturado').textContent = esVistaAgencia ? 'Facturado por INTELLISHIP' : 'Facturado';
+  document.getElementById('revUbic').style.display = esVistaAgencia ? 'none' : '';
   const q = document.getElementById('revBuscar').value.trim().toLowerCase();
   const fCons = document.getElementById('revConsolidado').value;
   const fServ = document.getElementById('revServicio').value;
   const fFact = document.getElementById('revFacturado').value;
-  const fUbic = document.getElementById('revUbic').value;
+  const fUbic = esVistaAgencia ? '' : document.getElementById('revUbic').value;
   const fAgencia = state.previewAgencia || document.getElementById('revAgencia').value;
   let rows = state.paquetes.filter(p=>{
     if(q && !(p.codigoBodega.toLowerCase().includes(q)||p.tracking.toLowerCase().includes(q)||(p.cliente||'').toLowerCase().includes(q))) return false;
@@ -1556,7 +1743,7 @@ function renderRevision(){
       <td>${p.agencia==='INTELLISHIP'?'<span class="badge mute">INTELLISHIP</span>':'<span class="badge purple">'+p.agencia+'</span>'}</td>
       <td class="mono">${fmtL(p.peso)}</td>
       <td>${p.facturado?'<span class="badge green">Facturado</span>':'<span class="badge amber">Pendiente</span>'}</td>
-      <td>${p.ubicacion?`<span class="badge teal">E${p.ubicacion.estante}-${p.ubicacion.repisa}</span>`:'<span class="badge mute">Sin ubicar</span>'}</td>
+      ${esVistaAgencia?'':`<td>${p.ubicacion?`<span class="badge teal">E${p.ubicacion.estante}-${p.ubicacion.repisa}</span>`:'<span class="badge mute">Sin ubicar</span>'}</td>`}
       <td><span class="badge mute wrap" style="max-width:150px;">${p.status}</span></td>
     </tr>`).join('') : '<tr><td colspan="9"><div class="empty">Sin resultados para este filtro.</div></td></tr>';
   tbody.querySelectorAll('tr.clickable').forEach(tr=>tr.addEventListener('click', ()=>abrirDetallePaquete(tr.dataset.wr)));
@@ -1729,6 +1916,57 @@ document.getElementById('btnConfirmarRecepcion').addEventListener('click', ()=>{
   state.recepScanned.forEach(p=>{ cambiarStatus(p,'Entregado en Oficina TGU'); liberarRepisa(p); });
   toast(state.recepScanned.length+' paquete(s) entregados con firma, liberados de su repisa.');
   state.recepScanned=[]; ctx.clearRect(0,0,canvas.width,canvas.height); state.firmaDibujada=false; renderAll();
+});
+
+/* =========================================================================
+   SALIDA SIMPLE PARA AGENCIAS — sin checar pagos, sin destinos internos
+   ========================================================================= */
+state.salidaAgenciaScanned = [];
+state.firmaAgDibujada = false;
+const salidaAgScan = document.getElementById('salidaAgScan');
+salidaAgScan.addEventListener('keydown',(e)=>{
+  if(e.key!=='Enter') return;
+  const val = salidaAgScan.value.trim().toUpperCase();
+  const p = state.paquetes.find(x=>x.codigoBodega===val);
+  if(!p){ toast('WR no encontrado', true); salidaAgScan.value=''; return; }
+  if(p.agencia!==state.previewAgencia){ toast('Ese paquete no pertenece a su agencia', true); salidaAgScan.value=''; return; }
+  if(state.salidaAgenciaScanned.find(x=>x.codigoBodega===val)){ toast('Ya fue escaneado', true); salidaAgScan.value=''; return; }
+  state.salidaAgenciaScanned.push(p); salidaAgScan.value=''; renderSalidaAgLista();
+});
+function renderSalidaAgLista(){
+  const el = document.getElementById('salidaAgLista');
+  if(!el) return;
+  el.innerHTML = state.salidaAgenciaScanned.length ? state.salidaAgenciaScanned.map((p,i)=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border-soft);font-size:13px;">
+      <span><span class="tk">${p.codigoBodega}</span> · ${p.cliente||'sin asignar'}</span><span style="cursor:pointer;color:var(--red);" data-i="${i}" class="quitarSalidaAg">✕</span>
+    </div>`).join('') : '<div class="empty">Sin paquetes escaneados.</div>';
+  el.querySelectorAll('.quitarSalidaAg').forEach(b=>b.addEventListener('click',()=>{ state.salidaAgenciaScanned.splice(+b.dataset.i,1); renderSalidaAgLista(); }));
+  document.getElementById('salidaAgCountBtn').textContent = state.salidaAgenciaScanned.length;
+}
+function refrescarSalidaAgStatus(){
+  const sel = document.getElementById('salidaAgStatus');
+  if(!sel || !state.previewAgencia) return;
+  const ag = getAgenciaData(state.previewAgencia);
+  const propios = ag ? ag.statusesPropios : [];
+  sel.innerHTML = propios.length ? propios.map(s=>`<option>${s}</option>`).join('') : '<option value="">Cree un status propio en Consolidados primero</option>';
+}
+const canvasAg = document.getElementById('firmaAgCanvas');
+const ctxAg = canvasAg.getContext('2d');
+ctxAg.strokeStyle = '#0d9aa6'; ctxAg.lineWidth = 2.6; ctxAg.lineCap='round';
+let drawingAg=false;
+function posAg(e){ const r=canvasAg.getBoundingClientRect(); const cx=(e.touches?e.touches[0].clientX:e.clientX)-r.left; const cy=(e.touches?e.touches[0].clientY:e.clientY)-r.top; return {x:cx*canvasAg.width/r.width, y:cy*canvasAg.height/r.height}; }
+['mousedown','touchstart'].forEach(ev=>canvasAg.addEventListener(ev,(e)=>{ drawingAg=true; const p=posAg(e); ctxAg.beginPath(); ctxAg.moveTo(p.x,p.y); state.firmaAgDibujada=true; }));
+['mousemove','touchmove'].forEach(ev=>canvasAg.addEventListener(ev,(e)=>{ if(!drawingAg) return; e.preventDefault(); const p=posAg(e); ctxAg.lineTo(p.x,p.y); ctxAg.stroke(); }));
+['mouseup','mouseleave','touchend'].forEach(ev=>canvasAg.addEventListener(ev,()=>{ drawingAg=false; }));
+document.getElementById('btnLimpiarFirmaAg').addEventListener('click', ()=>{ ctxAg.clearRect(0,0,canvasAg.width,canvasAg.height); state.firmaAgDibujada=false; });
+document.getElementById('btnConfirmarSalidaAg').addEventListener('click', ()=>{
+  const statusElegido = document.getElementById('salidaAgStatus').value;
+  if(!state.salidaAgenciaScanned.length){ toast('Escanee al menos un paquete', true); return; }
+  if(!statusElegido){ toast('Cree y elija un status propio antes de confirmar', true); return; }
+  if(!state.firmaAgDibujada){ toast('Se requiere la firma de su cliente', true); return; }
+  state.salidaAgenciaScanned.forEach(p=>{ cambiarStatus(p,statusElegido); liberarRepisa(p); });
+  toast(state.salidaAgenciaScanned.length+' paquete(s) marcados como "'+statusElegido+'".');
+  state.salidaAgenciaScanned=[]; ctxAg.clearRect(0,0,canvasAg.width,canvasAg.height); state.firmaAgDibujada=false; renderAll();
 });
 
 /* =========================================================================
@@ -1942,11 +2180,14 @@ function tarifaParaPaqueteAgencia(p, agenciaNombre){
 }
 function mostrarFacturaInterna(clienteId){
   const cli = state.clientes.find(c=>c.id===clienteId);
-  const listos = state.paquetes.filter(p=>p.casillero===cli.casillero && !p.facturado);
+  const todosPendientes = state.paquetes.filter(p=>p.casillero===cli.casillero && !p.facturado);
+  const listos = todosPendientes.filter(p=>p.agencia==='INTELLISHIP');
+  const deAgencia = todosPendientes.filter(p=>p.agencia!=='INTELLISHIP');
   const el = document.getElementById('facturaInternaDetalle');
-  if(!listos.length){ el.innerHTML = `<div class="empty" style="margin-top:16px;">${cli.nombre} no tiene paquetes pendientes de facturar.</div>`; return; }
-  el.innerHTML = `<div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border);">
-      <b>${cli.nombre}</b> <span style="color:var(--ink-mute);font-size:12px;">· ${cli.casillero} · ${cli.cobroPieCubico?'cobro por pie cúbico':'cobro por libra'}</span>
+  const avisoAgencia = deAgencia.length ? `<div class="warnbox show">Este cliente también tiene ${deAgencia.length} paquete(s) de agencia externa (${[...new Set(deAgencia.map(p=>p.agencia))].join(', ')}) pendientes. Esos <b>no se le cobran directo al cliente</b> — se facturan a la agencia con su propia tarifa, desde la pestaña "Facturar a agencias".</div>` : '';
+  if(!listos.length){ el.innerHTML = avisoAgencia || `<div class="empty" style="margin-top:16px;">${cli.nombre} no tiene paquetes de INTELLISHIP pendientes de facturar.</div>`; return; }
+  el.innerHTML = avisoAgencia + `<div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border);">
+      <b>${cli.nombre}</b> <span style="color:var(--ink-mute);font-size:12px;">· ${cli.casillero} · ${cli.cobroPieCubico?'cobro por pie cúbico':'cobro por libra'} · solo paquetes de INTELLISHIP</span>
       <div style="margin-top:12px;">${listos.map(p=>{ const t=tarifaParaPaquete(p,cli);
           return `<label class="permrow" style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border-soft);">
             <input type="checkbox" class="check facInternaChk" data-wr="${p.codigoBodega}" checked>
@@ -2031,7 +2272,7 @@ function renderFacturasAgenciaLista(){
   el.innerHTML = state.facturasAgencia.length ? state.facturasAgencia.map(f=>{
     const pago = estadoPagoFacturaAgencia(f);
     return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-soft);flex-wrap:wrap;gap:8px;">
-      <div><b class="mono">${f.folio}</b> · ${f.agencia} <span style="color:var(--ink-mute);font-size:12px;">· ${f.fecha} · ${f.paquetes.length} paquete(s)</span></div>
+      <div><b class="mono">${f.folio}</b> · ${f.agencia} <span style="color:var(--ink-mute);font-size:12px;">· ${f.fecha} · ${f.paquetes.length} paquete(s)${f.nota?' · auto-generada al notificar':''}</span></div>
       <div style="display:flex;align-items:center;gap:10px;"><span class="mono" style="font-weight:700;">${money(f.montoTotal)}</span><span class="badge ${pago.color}">${pago.texto}</span></div>
     </div>`;
   }).join('') : '<div class="empty">Aún no se han emitido facturas a agencias.</div>';
@@ -2071,11 +2312,21 @@ function renderFacturasVistaAgencia(){
   }));
 }
 let despachoTabActual = 'oficina';
+let despachoSubTab = 'pendientes';
 document.querySelectorAll('.pillnav .p[data-desptab]').forEach(p=>{
   p.addEventListener('click', ()=>{
     document.querySelectorAll('.pillnav .p[data-desptab]').forEach(x=>x.classList.remove('active')); p.classList.add('active');
     despachoTabActual = p.dataset.desptab;
-    document.getElementById('despachoFiltrosNacional').style.display = despachoTabActual==='nacional' ? 'flex' : 'none';
+    const esNacional = despachoTabActual==='nacional';
+    document.getElementById('despPaqueteraLabel').style.display = esNacional ? 'inline' : 'none';
+    document.getElementById('despPaquetera').style.display = esNacional ? 'inline-block' : 'none';
+    renderDespacho();
+  });
+});
+document.querySelectorAll('.pillnav .p[data-despsub]').forEach(p=>{
+  p.addEventListener('click', ()=>{
+    document.querySelectorAll('.pillnav .p[data-despsub]').forEach(x=>x.classList.remove('active')); p.classList.add('active');
+    despachoSubTab = p.dataset.despsub;
     renderDespacho();
   });
 });
@@ -2087,42 +2338,53 @@ document.getElementById('btnLimpiarFiltrosDespacho').addEventListener('click', (
 function renderDespacho(){
   const el = document.getElementById('despachoLista');
   if(!el) return;
+  const esHistorial = despachoSubTab==='historial';
   let listas = state.facturas.filter(f=>{
     if(f.entregaTipo!==despachoTabActual) return false;
     if(!estadoPagoFactura(f).ok) return false;
     const paq = state.paquetes.filter(p=>f.paquetes.includes(p.codigoBodega));
-    return paq.length && paq.every(p=>p.status===STATUS_LISTO);
+    if(!paq.length) return false;
+    const todosListos = paq.every(p=>p.status===STATUS_LISTO);
+    return esHistorial ? !todosListos : todosListos;
+  });
+  const fecha = document.getElementById('despFecha').value;
+  if(fecha) listas = listas.filter(f=>{
+    const d = new Date(f.fechaTS);
+    const fStr = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    return fStr===fecha;
   });
   if(despachoTabActual==='nacional'){
-    const fecha = document.getElementById('despFecha').value;
     const paquetera = document.getElementById('despPaquetera').value;
-    if(fecha) listas = listas.filter(f=>{
-      const d = new Date(f.fechaTS);
-      const fStr = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-      return fStr===fecha;
-    });
     if(paquetera) listas = listas.filter(f=>f.paquetera===paquetera);
   }
-  if(!listas.length){ el.innerHTML = '<div class="empty" style="font-size:14px;padding:50px 20px;">No hay órdenes pagadas y listas para entrega en esta categoría todavía.</div>'; return; }
+  if(!listas.length){ el.innerHTML = '<div class="empty" style="font-size:14px;padding:50px 20px;">'+(esHistorial? 'No hay órdenes despachadas todavía en esta categoría.' : 'No hay órdenes pagadas y listas para entrega en esta categoría todavía.')+'</div>'; return; }
   el.innerHTML = listas.map(f=>{
     const paq = state.paquetes.filter(p=>f.paquetes.includes(p.codigoBodega));
     const servicios = [...new Set(paq.map(p=>p.servicio))];
     const mixta = servicios.length>1;
+    const statusesPaq = [...new Set(paq.map(p=>p.status))];
     return `<div class="despacho-card clickable-despacho" data-id="${f.id}" style="cursor:pointer;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
         <div>
           <div class="dnombre">${f.cliente}</div>
-          <div style="font-size:12.5px;color:var(--ink-mute);margin-top:2px;">Casillero ${f.casillero}</div>
+          <div style="font-size:12.5px;color:var(--ink-mute);margin-top:2px;">Casillero ${f.casillero} · ${f.fecha}</div>
         </div>
-        ${despachoTabActual==='nacional' ? (f.empacado? '<span class="despacho-chip" style="background:var(--green-soft);color:var(--green);">✔ Empacado</span>' : `<button class="btn primary sm marcarEmpacado" data-id="${f.id}">Marcar como empacado</button>`) : ''}
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          ${(!esHistorial && despachoTabActual==='nacional') ? (f.empacado? '<span class="despacho-chip" style="background:var(--green-soft);color:var(--green);">✔ Empacado</span>' : `<button class="btn primary sm marcarEmpacado" data-id="${f.id}">Marcar como empacado</button>`) : ''}
+          ${(!esHistorial && (despachoTabActual==='oficina'||despachoTabActual==='domicilio_tgu')) ? `<button class="btn ok sm marcarEntregado" data-id="${f.id}">✔ Marcar como entregado</button>` : ''}
+          ${esHistorial ? `<span class="despacho-chip" style="background:var(--border-soft);color:var(--ink-dim);">${statusesPaq.length>1?'Varios status':statusesPaq[0]}</span>` : ''}
+        </div>
       </div>
       <div style="margin-top:12px;">
         ${mixta? '<span class="despacho-chip" style="background:var(--purple-soft);color:var(--purple);">Mixta: '+servicios.join(' + ')+'</span>' : '<span class="despacho-chip" style="background:var(--accent-soft);color:var(--accent-dark);">'+servicios[0]+'</span>'}
         <span class="despacho-chip" style="background:var(--border-soft);color:var(--ink-dim);">${paq.length} paquete(s)</span>
         ${f.paquetera? '<span class="despacho-chip" style="background:var(--amber-soft);color:var(--amber);">'+f.paquetera+'</span>' : ''}
       </div>
-      <div style="margin-top:12px;font-size:12.5px;color:var(--ink-dim);">
-        ${paq.map(p=>`<span class="tk" style="margin-right:10px;">${p.codigoBodega} <span style="color:var(--ink-mute);">(${p.servicio})</span></span>`).join('')}
+      <div style="margin-top:12px;border-top:1px solid var(--border-soft);padding-top:8px;">
+        ${paq.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:12.5px;">
+          <span class="tk">${p.codigoBodega} <span style="color:var(--ink-mute);">(${p.servicio})</span></span>
+          <span style="color:var(--ink-mute);">Consolidado <b style="color:var(--ink-dim);">${p.consolidado}</b> · ${p.ubicacion?('Estante '+p.ubicacion.estante+', repisa '+p.ubicacion.repisa):'sin ubicar'}</span>
+        </div>`).join('')}
       </div>
     </div>`;
   }).join('');
@@ -2132,6 +2394,15 @@ function renderDespacho(){
     toast('Orden de '+f.cliente+' marcada como empacada, lista para '+f.paquetera+'.');
     renderDespacho();
   }));
+  el.querySelectorAll('.marcarEntregado').forEach(b=>b.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    const f = state.facturas.find(x=>x.id===b.dataset.id);
+    const paqOrden = state.paquetes.filter(p=>f.paquetes.includes(p.codigoBodega));
+    const nuevoStatus = despachoTabActual==='oficina' ? 'Entregado en Oficina TGU' : 'Entregado a Motorista para entrega final';
+    paqOrden.forEach(p=>{ cambiarStatus(p, nuevoStatus); liberarRepisa(p); });
+    toast('Orden de '+f.cliente+' marcada como entregada — se movió al historial.');
+    renderAll();
+  }));
   el.querySelectorAll('.clickable-despacho').forEach(card=>card.addEventListener('click', ()=>abrirDespachoDetalle(card.dataset.id)));
 }
 function abrirDespachoDetalle(facturaId){
@@ -2139,6 +2410,8 @@ function abrirDespachoDetalle(facturaId){
   const paq = state.paquetes.filter(p=>f.paquetes.includes(p.codigoBodega));
   const servicios = [...new Set(paq.map(p=>p.servicio))];
   const mixta = servicios.length>1;
+  const yaEntregado = !paq.every(p=>p.status===STATUS_LISTO);
+  const puedeMarcarEntregado = !yaEntregado && (f.entregaTipo==='oficina' || f.entregaTipo==='domicilio_tgu');
   document.getElementById('paqueteDetalleContent').innerHTML = `
     <h3>Orden de ${f.cliente} <span class="close" onclick="closeModal('modalPaquete')">✕</span></h3>
     <div style="margin-bottom:14px;">
@@ -2153,10 +2426,21 @@ function abrirDespachoDetalle(facturaId){
     </div>
     <div style="border-top:1px solid var(--border-soft);padding-top:12px;">
       <b style="font-size:13px;">Paquetes de esta orden (${paq.length})</b>
-      ${paq.map(p=>`<div style="font-size:13px;padding:8px 0;border-bottom:1px solid var(--border-soft);display:flex;justify-content:space-between;"><span><span class="tk">${p.codigoBodega}</span> · ${p.servicio}</span><span class="mono">${fmtL(p.peso)}</span></div>`).join('')}
+      ${paq.map(p=>`<div style="font-size:13px;padding:8px 0;border-bottom:1px solid var(--border-soft);">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><span><span class="tk">${p.codigoBodega}</span> · ${p.servicio} · ${fmtL(p.peso)}</span><span class="badge mute wrap">${p.status}</span></div>
+        <div style="color:var(--ink-mute);font-size:12px;margin-top:3px;">Consolidado <b style="color:var(--ink-dim);">${p.consolidado}</b> · ${p.ubicacion?('Estante '+p.ubicacion.estante+', repisa '+p.ubicacion.repisa):'sin ubicar'}</div>
+      </div>`).join('')}
     </div>
+    ${puedeMarcarEntregado ? `<button class="btn ok" id="btnMarcarEntregadoDetalle" data-id="${f.id}" style="width:100%;margin-top:16px;">✔ Marcar como entregado</button>` : ''}
   `;
   document.getElementById('modalPaquete').classList.add('show');
+  const btnEnt = document.getElementById('btnMarcarEntregadoDetalle');
+  if(btnEnt) btnEnt.addEventListener('click', ()=>{
+    const nuevoStatus = f.entregaTipo==='oficina' ? 'Entregado en Oficina TGU' : 'Entregado a Motorista para entrega final';
+    paq.forEach(p=>{ cambiarStatus(p, nuevoStatus); liberarRepisa(p); });
+    toast('Orden de '+f.cliente+' marcada como entregada — se movió al historial.');
+    closeModal('modalPaquete'); renderAll();
+  });
 }
 
 /* =========================================================================
@@ -2178,7 +2462,7 @@ function mostrarFichaCliente(id){
   const c = state.clientes.find(x=>x.id===id);
   const soloLectura = !!state.previewAgencia;
   const paquetes = state.paquetes.filter(p=>p.casillero===c.casillero && (!state.previewAgencia || p.agencia===state.previewAgencia));
-  const facturas = state.facturas.filter(f=>f.casillero===c.casillero);
+  const facturas = state.previewAgencia ? [] : state.facturas.filter(f=>f.casillero===c.casillero);
   const entregados = paquetes.filter(p=>p.status.includes('Entregado'));
   document.getElementById('fichaCliente').innerHTML = `
     <h3>${c.nombre}</h3>
@@ -2192,7 +2476,7 @@ function mostrarFichaCliente(id){
     <div class="pillnav" id="fichaTabs" style="margin-bottom:12px;">
       <div class="p active" data-tab="actividad">Actividad</div>
       <div class="p" data-tab="paquetes">Paquetes (${paquetes.length})</div>
-      <div class="p" data-tab="facturas">Facturas (${facturas.length})</div>
+      ${soloLectura?'':'<div class="p" data-tab="facturas">Facturas ('+facturas.length+')</div>'}
       <div class="p" data-tab="entregas">Entregas (${entregados.length})</div>
       ${soloLectura?'':'<div class="p" data-tab="tarifa">Tarifa</div>'}
     </div>
@@ -2212,7 +2496,17 @@ function mostrarFichaCliente(id){
       const fechasHist = paquetes.map(p=>p.historial[p.historial.length-1]?.fecha).filter(Boolean).sort();
       const ultimaActividad = fechasHist.length ? fechasHist[fechasHist.length-1] : 'Sin actividad registrada';
       const mixtas = facturas.filter(f=>esFacturaMixta(f)).length;
-      cont.innerHTML = `
+      cont.innerHTML = soloLectura ? `
+        <div class="resumen3" style="grid-template-columns:1fr 1fr;">
+          <div class="rc"><div class="rk">Paquetes de su agencia</div><div class="rv">${paquetes.length}</div></div>
+          <div class="rc"><div class="rk">Libras acumuladas</div><div class="rv">${totalLb.toFixed(1)}</div></div>
+        </div>
+        <div style="font-size:12.5px;color:var(--ink-dim);line-height:2.1;">
+          <div><b style="color:var(--ink);">Servicio que más usa (con su agencia):</b> ${servicioTop?servicioTop[0]+' ('+servicioTop[1]+' veces)':'—'}</div>
+          <div><b style="color:var(--ink);">Última actividad registrada:</b> ${ultimaActividad}</div>
+          <div><b style="color:var(--ink);">Paquetes entregados:</b> ${entregados.length} de ${paquetes.length}</div>
+        </div>
+        <div class="hint" style="margin-top:10px;">No se muestra facturación ni forma de pago: eso corresponde a la relación directa de este cliente con INTELLISHIP por fuera de su agencia.</div>` : `
         <div class="resumen3" style="grid-template-columns:1fr 1fr;">
           <div class="rc"><div class="rk">Paquetes históricos</div><div class="rv">${paquetes.length}</div></div>
           <div class="rc"><div class="rk">Libras acumuladas</div><div class="rv">${totalLb.toFixed(1)}</div></div>
@@ -2274,6 +2568,7 @@ function mostrarFichaCliente(id){
 function renderPrealertas(){
   document.getElementById('prealertasBody').innerHTML = state.prealertas.length ? state.prealertas.map(pa=>`
     <tr data-id="${pa.id}">
+      <td class="mono" style="color:var(--ink-mute);font-size:12px;">${pa.fecha||'—'}</td>
       <td>${pa.cliente}</td>
       <td><input type="text" class="mono paInput" data-f="tracking" value="${pa.tracking}"></td>
       <td><input type="text" class="paInput" data-f="tienda" value="${pa.tienda}"></td>
@@ -2281,7 +2576,7 @@ function renderPrealertas(){
       <td><input type="number" class="mono paInput" data-f="valor" value="${pa.valor}" style="width:90px;"></td>
       <td><select class="paInput" data-f="servicio"><option ${pa.servicio==='Standard'?'selected':''}>Standard</option><option ${pa.servicio==='Marítimo'?'selected':''}>Marítimo</option><option ${pa.servicio==='Express'?'selected':''}>Express</option></select></td>
       <td><button class="btn primary sm guardarPa" data-id="${pa.id}">Guardar</button></td>
-    </tr>`).join('') : '<tr><td colspan="7"><div class="empty">Sin prealertas registradas.</div></td></tr>';
+    </tr>`).join('') : '<tr><td colspan="8"><div class="empty">Sin prealertas registradas.</div></td></tr>';
   document.querySelectorAll('.guardarPa').forEach(b=>{
     b.addEventListener('click', ()=>{
       const tr = b.closest('tr'); const pa = state.prealertas.find(x=>x.id===b.dataset.id);
@@ -2514,6 +2809,7 @@ document.getElementById('btnGuardarConfiguracion').addEventListener('click', ()=
 function renderAll(){
   renderConsolidadosGrid();
   if(state.consolidadoAbierto) renderConsolidadoDetalle();
+  refrescarSalidaAgStatus();
   renderRevision();
   renderBodega();
   refreshUbicarSelector();
@@ -2534,6 +2830,20 @@ function renderAll(){
   renderConfiguracion();
   document.getElementById('navCountPaq').textContent = state.paquetes.filter(p=>!p.facturado).length;
 }
+(function restaurarUltimaVista(){
+  let vistaGuardada = null;
+  try{ vistaGuardada = localStorage.getItem('intelliship_lastView'); }catch(e){}
+  if(vistaGuardada){
+    const item = document.querySelector('.navitem[data-view="'+vistaGuardada+'"]');
+    const vista = document.getElementById('v-'+vistaGuardada);
+    if(item && vista){
+      document.querySelectorAll('.navitem').forEach(i=>i.classList.remove('active'));
+      item.classList.add('active');
+      document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+      vista.classList.add('active');
+    }
+  }
+})();
 renderAll();
 </script>
 </body>
