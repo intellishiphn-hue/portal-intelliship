@@ -257,6 +257,7 @@ tbody tr.clickable:hover td{background:var(--accent-soft);}
       <div class="rail-group">
         <div class="glabel">Administración</div>
         <div class="navitem" data-view="usuarios" data-mod="usuarios">Usuarios &amp; permisos</div>
+        <div class="navitem" data-view="agencias" data-mod="agencias">Agencias</div>
         <div class="navitem" data-view="configuracion" data-mod="configuracion">Configuración</div>
       </div>
     </div>
@@ -448,30 +449,46 @@ tbody tr.clickable:hover td{background:var(--accent-soft);}
 
     <!-- ===================== FACTURAS ===================== -->
     <div class="view" id="v-facturas">
-      <div class="topbar"><div><h1>Facturas</h1><div class="sub">El cliente genera su factura en la app. Aquí se confirma qué facturó, y se puede facturar internamente si el cliente no puede hacerlo.</div></div></div>
-      <div class="pillnav">
-        <div class="p active" data-facttab="cliente">Facturadas por el cliente <span class="badge amber" id="pillCountFact">0</span></div>
-        <div class="p" data-facttab="interna">Facturación interna</div>
-      </div>
-      <div id="facttab-cliente">
-        <div class="toolbar">
-          <input type="text" id="factBuscar" placeholder="Buscar por folio o cliente…">
-          <label style="margin:0;">Desde</label><input type="date" id="factDesde" style="width:auto;">
-          <label style="margin:0;">Hasta</label><input type="date" id="factHasta" style="width:auto;">
+      <div class="topbar"><div><h1>Facturas</h1><div class="sub" id="facturasSub">El cliente genera su factura en la app. Aquí se confirma qué facturó, y se puede facturar internamente si el cliente no puede hacerlo.</div></div></div>
+      <div id="facturasVistaNormal">
+        <div class="pillnav" id="facturasPillnav">
+          <div class="p active" data-facttab="cliente">Facturadas por el cliente <span class="badge amber" id="pillCountFact">0</span></div>
+          <div class="p" data-facttab="interna">Facturación interna</div>
+          <div class="p" data-facttab="agencia">Facturar a agencias</div>
         </div>
-        <div id="facturasClienteLista"></div>
-      </div>
-      <div id="facttab-interna" style="display:none;">
-        <div class="card">
-          <h3>Facturar a un cliente manualmente</h3>
-          <div class="field ac-wrap" style="max-width:420px;">
-            <label>Buscar cliente</label>
-            <input type="text" id="facturaInternaBuscar" placeholder="Nombre o casillero…" autocomplete="off">
-            <div class="ac-list" id="acFacturaInterna"></div>
+        <div id="facttab-cliente">
+          <div class="toolbar">
+            <input type="text" id="factBuscar" placeholder="Buscar por folio o cliente…">
+            <label style="margin:0;">Desde</label><input type="date" id="factDesde" style="width:auto;">
+            <label style="margin:0;">Hasta</label><input type="date" id="factHasta" style="width:auto;">
           </div>
-          <div id="facturaInternaDetalle"></div>
+          <div id="facturasClienteLista"></div>
+        </div>
+        <div id="facttab-interna" style="display:none;">
+          <div class="card">
+            <h3>Facturar a un cliente manualmente</h3>
+            <div class="field ac-wrap" style="max-width:420px;">
+              <label>Buscar cliente</label>
+              <input type="text" id="facturaInternaBuscar" placeholder="Nombre o casillero…" autocomplete="off">
+              <div class="ac-list" id="acFacturaInterna"></div>
+            </div>
+            <div id="facturaInternaDetalle"></div>
+          </div>
+        </div>
+        <div id="facttab-agencia" style="display:none;">
+          <div class="card">
+            <h3>Facturar a una agencia</h3>
+            <div class="field" style="max-width:300px;"><label>Agencia</label><select id="selAgenciaFacturar"></select></div>
+            <div id="facturaAgenciaDetalle"></div>
+          </div>
+          <div style="height:16px;"></div>
+          <div class="card">
+            <h3>Facturas emitidas a agencias</h3>
+            <div id="facturasAgenciaLista"></div>
+          </div>
         </div>
       </div>
+      <div id="facturasVistaAgenciaPortal" style="display:none;"></div>
     </div>
 
     <!-- ===================== CLIENTES ===================== -->
@@ -570,6 +587,27 @@ tbody tr.clickable:hover td{background:var(--accent-soft);}
     </div>
 
     <!-- ===================== CONFIGURACIÓN ===================== -->
+    <!-- ===================== AGENCIAS ===================== -->
+    <div class="view" id="v-agencias">
+      <div class="topbar"><div><h1>Agencias</h1><div class="sub">Solo Master. Contacto para avisos y tarifas por tipo de servicio para cada agencia.</div></div></div>
+      <div class="grid2">
+        <div class="card" style="padding:0;overflow-x:auto;">
+          <table><thead><tr><th>Agencia</th><th>WhatsApp</th><th>Correo</th><th>Tarifa</th><th></th></tr></thead>
+          <tbody id="agenciasBody"></tbody></table>
+        </div>
+        <div class="card">
+          <h3>Agregar nueva agencia</h3>
+          <div class="field"><label>Nombre de la agencia</label><input type="text" id="nuevaAgenciaNombre" placeholder="ej. TRANSCARGO"></div>
+          <div class="field"><label>WhatsApp de gerencia</label><input type="text" id="nuevaAgenciaWhatsapp" placeholder="+504 9999-0000"></div>
+          <div class="field"><label>Correo de gerencia</label><input type="email" id="nuevaAgenciaCorreo" placeholder="gerencia@agencia.com"></div>
+          <button class="btn primary" id="btnAgregarAgencia" style="width:100%;">+ Agregar agencia</button>
+          <div style="height:20px;"></div>
+          <h3 style="margin-bottom:10px;">Editar tarifa de agencia</h3>
+          <div id="agenciaTarifaEdit" class="empty">Seleccione una agencia de la tabla para editar su tarifa.</div>
+        </div>
+      </div>
+    </div>
+
     <div class="view" id="v-configuracion">
       <div class="topbar"><div><h1>Configuración</h1><div class="sub">Solo Master. Tarifas por defecto y tipo de cambio — el cobro final siempre se hace en Lempiras.</div></div></div>
       <div class="grid2">
@@ -607,7 +645,15 @@ tbody tr.clickable:hover td{background:var(--accent-soft);}
   <div class="modal wide">
     <h3>Ingresar paquete <span class="tag mono" id="ingresoConsolidadoTag" style="font-size:12px;color:var(--ink-mute);"></span><span class="close" onclick="cerrarModalIngreso()">✕</span></h3>
     <div id="ultimaEtiquetaBox" style="display:none;margin-bottom:16px;"></div>
+    <div class="segmented" id="segModoIngreso">
+      <div class="s active" data-modo="manual">Ingreso manual</div>
+      <div class="s" data-modo="maquina">Ingresar con máquina</div>
+    </div>
     <div class="warnbox" id="prealertaWarning"></div>
+    <div class="warnbox show" id="avisoMaquina" style="display:none;background:var(--accent-soft);border-color:var(--accent);color:var(--accent-dark);">
+      La máquina captura peso, medidas y foto automáticamente, pero no reconoce el cliente. Este paquete quedará <b>pendiente de asignar casillero</b> dentro del consolidado hasta que alguien lo vincule manualmente.
+      <button class="btn primary sm" id="btnCapturarMaquina" type="button" style="margin-top:8px;display:block;">📷 Capturar datos de la máquina</button>
+    </div>
     <div class="scanbox"><input type="text" id="inTracking" placeholder="Escanear tracking de origen (opcional)…" autocomplete="off"></div>
     <div class="row2">
       <div class="field"><label>Peso real (lbs)</label><input type="number" step="0.01" id="inPeso" class="mono" placeholder="0.00"></div>
@@ -625,9 +671,6 @@ tbody tr.clickable:hover td{background:var(--accent-soft);}
         <label>Agencia</label>
         <select id="inAgencia">
           <option value="INTELLISHIP" selected>INTELLISHIP</option>
-          <option value="LOGISTEX">LOGISTEX</option>
-          <option value="ENCARGHO">ENCARGHO</option>
-          <option value="CONNECT">CONNECT</option>
         </select>
       </div>
       <div class="field">
@@ -638,7 +681,7 @@ tbody tr.clickable:hover td{background:var(--accent-soft);}
         </div>
       </div>
     </div>
-    <div class="field ac-wrap">
+    <div class="field ac-wrap" id="clienteSection">
       <label>Cliente <span style="font-weight:400;color:var(--ink-mute);">— escriba nombre o número de casillero, funciona con ambos</span></label>
       <input type="text" id="inCliente" placeholder="Nombre o casillero…" autocomplete="off">
       <div class="ac-list" id="acCliente"></div>
@@ -661,7 +704,14 @@ tbody tr.clickable:hover td{background:var(--accent-soft);}
 const CIUDADES = ["Tegucigalpa","San Pedro Sula","La Ceiba","Choluteca","Comayagua","Danlí","Juticalpa","Santa Rosa de Copán"];
 const NOMBRES = ["Carlos Mendoza","María Fernández","José Rivera","Ana Lucía Cáceres","Luis Enrique Paz","Karla Suyapa Zúniga","Roberto Núñez","Daniela Ordóñez","Óscar Bonilla","Fátima Andino","Douglas Matute","Wendy Aguilar","Marlon Erazo","Gabriela Turcios","Ever Maradiaga"];
 const TIENDAS = ["Amazon","Shein","Walmart","Best Buy","Target","eBay"];
-const AGENCIAS = ["INTELLISHIP","LOGISTEX","ENCARGHO","CONNECT"];
+let agenciasData = [
+  {nombre:'LOGISTEX', whatsapp:'+504 9999-0001', correo:'gerencia@logistex.hn', tarifa:{}},
+  {nombre:'ENCARGHO', whatsapp:'+504 9999-0002', correo:'gerencia@encargho.hn', tarifa:{}},
+  {nombre:'CONNECT', whatsapp:'+504 9999-0003', correo:'gerencia@connect.hn', tarifa:{}},
+];
+function nombresAgencias(){ return agenciasData.map(a=>a.nombre); }
+function todasAgenciasIncluyendoIntelliship(){ return ['INTELLISHIP', ...nombresAgencias()]; }
+function getAgenciaData(nombre){ return agenciasData.find(a=>a.nombre===nombre); }
 function tarifaMaritimoBase(peso){
   const c = state.configuracion;
   if(peso<=14) return c.maritimo1; if(peso<=29) return c.maritimo2; return c.maritimo3;
@@ -679,21 +729,21 @@ const MODULOS = [
   {key:'pagos', label:'Pagos'}, {key:'facturas', label:'Facturas'},
   {key:'clientes', label:'Clientes & tarifas'}, {key:'prealertas', label:'Prealertas'},
   {key:'analitica', label:'Analítica'}, {key:'reportes', label:'Reportería'},
-  {key:'notif', label:'Notificaciones'}, {key:'usuarios', label:'Usuarios & permisos'}, {key:'configuracion', label:'Configuración'},
+  {key:'notif', label:'Notificaciones'}, {key:'usuarios', label:'Usuarios & permisos'}, {key:'agencias', label:'Agencias'}, {key:'configuracion', label:'Configuración'},
 ];
 const ROLE_PRESETS = {
   'Bodega Miami': ['consolidados'],
   'Bodega Honduras': ['bodega','ubicar','salida','recepcion','despacho'],
   'Despacho': ['despacho'],
   'Coordinador': ['consolidados','revision','bodega','ubicar','salida','recepcion','despacho','pagos','facturas','clientes','prealertas','analitica','notif'],
-  'Agencia': ['consolidados','revision','clientes'],
+  'Agencia': ['consolidados','revision','clientes','facturas'],
   'Master': MODULOS.map(m=>m.key),
 };
 
 let state = {
   clientes:[], consolidados:[], paquetes:[], estantes:[], transferencias:[], tarjeta:[], prealertas:[],
-  notificaciones:[], facturas:[], usuarios:[],
-  nextConsolidado:6, nextWR:1, nextFolio:1,
+  notificaciones:[], facturas:[], facturasAgencia:[], usuarios:[],
+  nextConsolidado:6, nextWR:1, nextFolio:1, nextFolioAgencia:1,
   consolidadoAbierto:null, ingresoConsolidadoId:null,
   clienteSeleccionado:null, acHighlight:-1, ultimoEditadoBackup:null,
   ubicarConsolidadoId:null, ubicarPaqueteActual:null,
@@ -748,7 +798,7 @@ function seed(){
       if(ubic){ const est=state.estantes.find(e=>e.numero===ubic.estante); est.repisas.find(r=>r.id===ubic.repisa).ocupados++; }
       const largo=+(8+Math.random()*20).toFixed(1), ancho=+(6+Math.random()*16).toFixed(1), alto=+(4+Math.random()*14).toFixed(1);
       const fechaIngreso = new Date(Date.now()-Math.random()*13*86400000);
-      const agencia = Math.random()>0.78 ? rnd(AGENCIAS.slice(1)) : 'INTELLISHIP';
+      const agencia = Math.random()>0.78 ? rnd(nombresAgencias()) : 'INTELLISHIP';
       state.paquetes.push({
         codigoBodega:'WR'+pad(wrCount,4), tracking:'1Z'+Math.floor(10000000+Math.random()*89999999),
         agencia, cliente:cli.nombre, casillero:cli.casillero, consolidado:cons.id, servicio:cons.tipo,
@@ -855,6 +905,22 @@ function seed(){
   state.usuarios.push({id:uid('US-'), nombre:'Personal Bodega Miami', correo:'bodega.miami@intellishiphn.com', rol:'Bodega Miami', modulos:ROLE_PRESETS['Bodega Miami']});
   state.usuarios.push({id:uid('US-'), nombre:'Coordinador Operaciones', correo:'coordinacion@intellishiphn.com', rol:'Coordinador', modulos:ROLE_PRESETS['Coordinador']});
   state.usuarios.push({id:uid('US-'), nombre:'Usuario LOGISTEX', correo:'contacto@logistex.com', rol:'Agencia', agencia:'LOGISTEX', modulos:ROLE_PRESETS['Agencia']});
+
+  // ejemplos de facturación a agencias
+  ['LOGISTEX','ENCARGHO'].forEach((nombreAg, i)=>{
+    const disp = state.paquetes.filter(p=>p.agencia===nombreAg && !p.facturado && !p.pendienteAsignar).slice(0,2);
+    if(!disp.length) return;
+    let total=0; disp.forEach(p=>{ total+=tarifaParaPaqueteAgencia(p,nombreAg).monto; p.facturado=true; });
+    const factura = {id:uid('FAG-'), folio:'FA-'+pad(state.nextFolioAgencia++,6), agencia:nombreAg, fecha:new Date(Date.now()-i*86400000).toLocaleString('es-HN'), fechaTS:Date.now()-i*86400000,
+      paquetes:disp.map(p=>p.codigoBodega), montoTotal:+total.toFixed(2), estado: i===0?'en_revision':'pendiente_pago', transferenciaId:null};
+    if(i===0){
+      const trId = uid('TR-');
+      state.transferencias.push({id:trId, cliente:nombreAg+' (agencia)', agencia:nombreAg, monto:factura.montoTotal, bancoSugerido:'BAC',
+        fecha:factura.fecha, comprobante:'comprobante_'+factura.folio+'.jpg', estado:'pendiente'});
+      factura.transferenciaId = trId;
+    }
+    state.facturasAgencia.push(factura);
+  });
 }
 seed();
 
@@ -950,6 +1016,7 @@ function cerrarVistaConsolidado(){
   renderConsolidadosGrid();
 }
 let consSortBy = 'default';
+let ocultarAgenciasEnConsolidado = false;
 function renderConsolidadoDetalle(){
   const id = state.consolidadoAbierto;
   const cons = state.consolidados.find(c=>c.id===id);
@@ -960,6 +1027,12 @@ function renderConsolidadoDetalle(){
   const ubicados = paquetes.filter(p=>p.ubicacion);
   const pendientesUbicar = paquetes.filter(p=>!p.ubicacion);
   const totalPeso = paquetes.reduce((a,p)=>a+p.peso,0);
+  const agenciasPresentes = [...new Set(paquetes.map(p=>p.agencia))].filter(a=>a!=='INTELLISHIP');
+  const resumenPorAgencia = agenciasPresentes.map(nombreAg=>{
+    const paqAg = paquetes.filter(p=>p.agencia===nombreAg);
+    const ubicadosAg = paqAg.filter(p=>p.ubicacion);
+    return {nombreAg, total:paqAg.length, ubicados:ubicadosAg.length, completo: paqAg.length>0 && ubicadosAg.length===paqAg.length};
+  });
   const el = document.getElementById('consolidadoDetalle');
   el.innerHTML = `
     <div class="backlink" id="btnVolverConsolidados">&larr; Todos los consolidados</div>
@@ -995,7 +1068,8 @@ function renderConsolidadoDetalle(){
         <option value="facturado">Facturado primero</option>
         <option value="wr">Recibo WR</option>
       </select>
-      ${esVistaAgencia?'':`<div class="spacer"></div>
+      ${esVistaAgencia?'':`<label style="margin:0;display:flex;align-items:center;gap:6px;"><input type="checkbox" class="check" id="chkOcultarAgencias" ${ocultarAgenciasEnConsolidado?'checked':''}> Ocultar paquetes de agencias externas</label>
+      <div class="spacer"></div>
       <input type="text" id="nuevoStatusTexto" placeholder="Nombre de status nuevo…" style="width:220px;">
       <button class="btn ghost sm" id="btnAgregarStatus">+ Agregar status</button>`}
     </div>
@@ -1017,8 +1091,31 @@ function renderConsolidadoDetalle(){
       <div class="hint" style="margin-bottom:8px;">Miami reporta haber ingresado estos paquetes, pero aún no aparecen ubicados en una repisa de TGU. Revise antes de notificar a los clientes.</div>
       ${pendientesUbicar.map(p=>`<div style="font-size:12.5px;padding:6px 0;border-bottom:1px solid var(--border-soft);"><span class="tk">${p.codigoBodega}</span> · ${p.cliente}</div>`).join('')}
     </div>` : (paquetes.length? `<div class="split-note">✔ Los ${paquetes.length} paquetes de este consolidado ya están ubicados en TGU. Puede notificar con confianza.</div>` : '')}
+
+    ${(!esVistaAgencia && resumenPorAgencia.length) ? `
+    <div style="height:14px;"></div>
+    <div class="card">
+      <h3 style="font-size:13.5px;">Aviso a agencias externas <span class="tag">solo se notifica cuando el 100% de sus paquetes está ubicado</span></h3>
+      ${resumenPorAgencia.map(r=>{
+        const ag = getAgenciaData(r.nombreAg);
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-soft);flex-wrap:wrap;gap:8px;">
+          <div><b>${r.nombreAg}</b> <span style="color:var(--ink-mute);font-size:12px;">· ${r.ubicados}/${r.total} ubicados${ag?' · '+ag.whatsapp+' · '+ag.correo:''}</span></div>
+          <button class="btn primary sm notificarAgenciaBtn" data-agencia="${r.nombreAg}" ${r.completo?'':'disabled'}>${r.completo?'Notificar a '+r.nombreAg:'Aún no está completo'}</button>
+        </div>`;
+      }).join('')}
+    </div>` : ''}
   `;
   document.getElementById('btnVolverConsolidados').addEventListener('click', cerrarVistaConsolidado);
+  el.querySelectorAll('.notificarAgenciaBtn').forEach(b=>{
+    if(b.disabled) return;
+    b.addEventListener('click', ()=>{
+      const nombreAg = b.dataset.agencia;
+      const ag = getAgenciaData(nombreAg);
+      state.notificaciones.unshift({fecha:new Date().toLocaleString('es-HN'), cliente:nombreAg+' (agencia)', evento:'Consolidado '+cons.id+' completo — todos sus paquetes ya están ubicados en TGU', canales:'WhatsApp + Correo (gerencia de la agencia)'});
+      toast('Aviso enviado a '+nombreAg+' — WhatsApp '+(ag?ag.whatsapp:'')+' y correo '+(ag?ag.correo:'')+'.');
+      renderAll();
+    });
+  });
   if(abierto && document.getElementById('btnAbrirIngreso')) document.getElementById('btnAbrirIngreso').addEventListener('click', ()=>abrirModalIngreso(cons.id));
   if(abierto && document.getElementById('btnCerrarConsolidado')) document.getElementById('btnCerrarConsolidado').addEventListener('click', ()=>{
     cons.estadoApertura='cerrado'; toast('Consolidado '+cons.id+' cerrado. Ya no admite nuevos ingresos.'); renderConsolidadoDetalle(); renderAll();
@@ -1031,6 +1128,8 @@ function renderConsolidadoDetalle(){
   });
   document.getElementById('consOrdenSel').value = consSortBy;
   document.getElementById('consOrdenSel').addEventListener('change', (e)=>{ consSortBy=e.target.value; renderConsolidadoDetalle(); });
+  const chkOcultarAg = document.getElementById('chkOcultarAgencias');
+  if(chkOcultarAg) chkOcultarAg.addEventListener('change', (e)=>{ ocultarAgenciasEnConsolidado=e.target.checked; renderConsolidadoDetalle(); });
   const btnAgregarStatus = document.getElementById('btnAgregarStatus');
   if(btnAgregarStatus) btnAgregarStatus.addEventListener('click', ()=>{
     const val = document.getElementById('nuevoStatusTexto').value.trim();
@@ -1056,16 +1155,17 @@ function renderConsolidadoDetalle(){
   }
   const tbody = document.getElementById('consTablaBody');
   let paquetesOrdenados = paquetes.slice();
-  if(consSortBy==='cliente') paquetesOrdenados.sort((a,b)=>a.cliente.localeCompare(b.cliente));
+  if(ocultarAgenciasEnConsolidado && !esVistaAgencia) paquetesOrdenados = paquetesOrdenados.filter(p=>p.agencia==='INTELLISHIP');
+  if(consSortBy==='cliente') paquetesOrdenados.sort((a,b)=>(a.cliente||'zzz').localeCompare(b.cliente||'zzz'));
   else if(consSortBy==='peso') paquetesOrdenados.sort((a,b)=>b.peso-a.peso);
   else if(consSortBy==='facturado') paquetesOrdenados.sort((a,b)=>(b.facturado?1:0)-(a.facturado?1:0));
   else if(consSortBy==='wr') paquetesOrdenados.sort((a,b)=>a.codigoBodega.localeCompare(b.codigoBodega));
   tbody.innerHTML = paquetesOrdenados.map(p=>{
     const bloqueado = esAgenciaTerceros(p) && !state.previewAgencia;
-    return `<tr>
+    return `<tr ${p.pendienteAsignar?'style="background:rgba(179,118,10,0.06);"':''}>
       ${esVistaAgencia?'':'<td><input type="checkbox" class="check consChk" data-wr="'+p.codigoBodega+'"></td>'}
       <td class="tk clickable-tk" data-wr="${p.codigoBodega}">${p.codigoBodega}</td>
-      <td>${p.cliente}</td>
+      <td>${p.pendienteAsignar? '<span class="badge amber">⚠ Sin asignar</span>' : p.cliente}</td>
       <td>${p.agencia==='INTELLISHIP'?'<span class="badge mute">INTELLISHIP</span>':'<span class="badge purple">'+p.agencia+'</span>'}</td>
       <td class="mono">${fmtL(p.peso)}</td>
       <td>${p.facturado? '<span class="badge green">Sí</span>' : '<span class="badge amber">No</span>'}</td>
@@ -1074,7 +1174,10 @@ function renderConsolidadoDetalle(){
           ${renderStatusOptions(p.status, bloqueado)}
         </select>
       </td>
-      <td>${state.previewAgencia?'':'<button class="btn ghost sm changeConsBtn" data-wr="'+p.codigoBodega+'">Mover</button>'}</td>
+      <td style="display:flex;gap:6px;">
+        ${p.pendienteAsignar && !state.previewAgencia? `<button class="btn primary sm asignarClienteBtn" data-wr="${p.codigoBodega}">Asignar cliente</button>` : ''}
+        ${state.previewAgencia?'':'<button class="btn ghost sm changeConsBtn" data-wr="'+p.codigoBodega+'">Mover</button>'}
+      </td>
     </tr>`;
   }).join('') || '<tr><td colspan="8"><div class="empty">Este consolidado aún no tiene paquetes. Use "Ingresar paquete".</div></td></tr>';
 
@@ -1085,6 +1188,7 @@ function renderConsolidadoDetalle(){
     cambiarStatus(p, sel.value); toast('Status de '+p.codigoBodega+' actualizado'); renderAll();
   }));
   tbody.querySelectorAll('.changeConsBtn').forEach(b=>b.addEventListener('click', ()=>abrirDetallePaquete(b.dataset.wr,true)));
+  tbody.querySelectorAll('.asignarClienteBtn').forEach(b=>b.addEventListener('click', ()=>abrirDetallePaquete(b.dataset.wr,false,true)));
   const chkAllEl = document.getElementById('chkAll');
   if(chkAllEl) chkAllEl.addEventListener('change',(e)=>{ document.querySelectorAll('.consChk').forEach(c=>c.checked=e.target.checked); updateConsSelCount(); });
   document.querySelectorAll('.consChk').forEach(c=>c.addEventListener('change', updateConsSelCount));
@@ -1187,6 +1291,27 @@ function actualizarVolumetrico(){
 ['inLargo','inAncho','inAlto'].forEach(id=>document.getElementById(id).addEventListener('input', actualizarVolumetrico));
 
 let fotoAdjunta = false;
+let modoIngresoActual = 'manual';
+document.getElementById('segModoIngreso').addEventListener('click', (e)=>{
+  const s = e.target.closest('.s'); if(!s) return;
+  document.querySelectorAll('#segModoIngreso .s').forEach(x=>x.classList.remove('active')); s.classList.add('active');
+  modoIngresoActual = s.dataset.modo;
+  const esMaquina = modoIngresoActual==='maquina';
+  document.getElementById('avisoMaquina').style.display = esMaquina ? 'block' : 'none';
+  document.getElementById('clienteSection').style.display = esMaquina ? 'none' : 'block';
+  if(esMaquina){ state.clienteSeleccionado=null; document.getElementById('acSelected').style.display='none'; document.getElementById('prealertaWarning').classList.remove('show'); }
+});
+document.getElementById('btnCapturarMaquina').addEventListener('click', ()=>{
+  document.getElementById('inPeso').value = (1+Math.random()*22).toFixed(2);
+  document.getElementById('inLargo').value = (8+Math.random()*20).toFixed(1);
+  document.getElementById('inAncho').value = (6+Math.random()*16).toFixed(1);
+  document.getElementById('inAlto').value = (4+Math.random()*14).toFixed(1);
+  actualizarVolumetrico();
+  fotoAdjunta = true;
+  document.getElementById('fotoStatus').textContent = '✔ Foto adjunta (máquina)';
+  document.getElementById('fotoStatus').style.color = 'var(--green)';
+  toast('Datos capturados por la máquina: peso, medidas y foto.');
+});
 document.getElementById('btnFoto').addEventListener('click', ()=>{
   fotoAdjunta = !fotoAdjunta;
   document.getElementById('fotoStatus').textContent = fotoAdjunta ? '✔ Foto adjunta' : 'Sin foto';
@@ -1195,7 +1320,14 @@ document.getElementById('btnFoto').addEventListener('click', ()=>{
 document.getElementById('inTracking').addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ e.preventDefault(); document.getElementById('inPeso').focus(); } });
 document.getElementById('inPeso').addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ e.preventDefault(); inCliente.focus(); } });
 
+function refrescarSelectAgencias(){
+  const sel = document.getElementById('inAgencia');
+  const actual = sel.value || 'INTELLISHIP';
+  sel.innerHTML = todasAgenciasIncluyendoIntelliship().map(a=>`<option value="${a}">${a}</option>`).join('');
+  sel.value = actual;
+}
 function abrirModalIngreso(consolidadoId, backup){
+  refrescarSelectAgencias();
   state.ingresoConsolidadoId = consolidadoId || state.consolidadoAbierto;
   const cons = state.consolidados.find(c=>c.id===state.ingresoConsolidadoId);
   document.getElementById('ingresoConsolidadoTag').textContent = '· '+cons.id+' · '+cons.tipo;
@@ -1225,6 +1357,10 @@ function limpiarFormIngreso(){
   inCliente.value=''; state.clienteSeleccionado=null; document.getElementById('acSelected').style.display='none';
   fotoAdjunta=false; document.getElementById('fotoStatus').textContent='Sin foto'; document.getElementById('fotoStatus').style.color='var(--ink-mute)';
   document.getElementById('prealertaWarning').classList.remove('show');
+  modoIngresoActual = 'manual';
+  document.querySelectorAll('#segModoIngreso .s').forEach(x=>x.classList.toggle('active', x.dataset.modo==='manual'));
+  document.getElementById('avisoMaquina').style.display='none';
+  document.getElementById('clienteSection').style.display='block';
 }
 function intentarIngresoRapido(){ document.getElementById('btnIngresar').click(); }
 document.getElementById('btnIngresar').addEventListener('click', ()=>{
@@ -1233,20 +1369,24 @@ document.getElementById('btnIngresar').addEventListener('click', ()=>{
   const largo = parseFloat(document.getElementById('inLargo').value)||0, ancho = parseFloat(document.getElementById('inAncho').value)||0, alto = parseFloat(document.getElementById('inAlto').value)||0;
   const agencia = document.getElementById('inAgencia').value;
   const cons = state.consolidados.find(c=>c.id===state.ingresoConsolidadoId);
+  const esMaquina = modoIngresoActual==='maquina';
+  if(!cons){ toast('Abra un consolidado activo antes de ingresar', true); return; }
   if(!peso || peso<=0){ toast('Ingrese el peso del paquete', true); return; }
-  if(!state.clienteSeleccionado){ toast('Seleccione el cliente (nombre o casillero)', true); return; }
+  if(!esMaquina && !state.clienteSeleccionado){ toast('Seleccione el cliente (nombre o casillero)', true); return; }
   if(cons.estadoApertura!=='abierto'){ toast('Este consolidado está cerrado', true); return; }
   const codigo = generarWR();
   const ahora = new Date();
   const nuevo = {
-    codigoBodega:codigo, tracking: trackingOrigen||'—', agencia, cliente:state.clienteSeleccionado.nombre, casillero:state.clienteSeleccionado.casillero,
+    codigoBodega:codigo, tracking: trackingOrigen||'—', agencia,
+    cliente: esMaquina? null : state.clienteSeleccionado.nombre, casillero: esMaquina? null : state.clienteSeleccionado.casillero,
+    pendienteAsignar: esMaquina,
     consolidado:cons.id, servicio:cons.tipo, peso, largo, ancho, alto, facturado:false, ubicacion:null, foto:fotoAdjunta,
     status:cons.status, fechaIngreso: ahora.toLocaleDateString('es-HN'),
-    historial:[{status:'Ingresado en bodega Miami', fecha: ahora.toLocaleString('es-HN')}],
+    historial:[{status: esMaquina? 'Ingresado en bodega Miami (con máquina, pendiente de asignar)' : 'Ingresado en bodega Miami', fecha: ahora.toLocaleString('es-HN')}],
   };
   state.paquetes.unshift(nuevo);
   mostrarUltimaEtiqueta(nuevo);
-  toast('Paquete '+codigo+' ingresado — etiqueta enviada a la impresora.');
+  toast(esMaquina? 'Paquete '+codigo+' ingresado con máquina — pendiente de asignar casillero.' : 'Paquete '+codigo+' ingresado — etiqueta enviada a la impresora.');
   limpiarFormIngreso();
   setTimeout(()=>document.getElementById('inTracking').focus(),30);
   if(state.consolidadoAbierto===cons.id) renderConsolidadoDetalle();
@@ -1259,16 +1399,16 @@ function mostrarUltimaEtiqueta(p){
       <div class="qr"></div>
       <div class="lh"><b>INTELLISHIP</b><span>${p.fechaIngreso}</span></div>
       <div class="code">${p.codigoBodega}</div>
-      <div class="rows"><div><b>Cliente:</b> ${p.cliente}</div><div><b>Casillero:</b> ${p.casillero}</div><div><b>Peso:</b> ${fmtL(p.peso)}</div><div><b>Servicio:</b> ${p.servicio} · Consolidado ${p.consolidado}</div></div>
+      <div class="rows"><div><b>Cliente:</b> ${p.cliente || '⚠ PENDIENTE DE ASIGNAR'}</div><div><b>Casillero:</b> ${p.casillero || '—'}</div><div><b>Peso:</b> ${fmtL(p.peso)}</div><div><b>Servicio:</b> ${p.servicio} · Consolidado ${p.consolidado}</div></div>
       <div class="barcode"></div>
     </div>
-    <div class="hint" style="text-align:center;margin-top:6px;">✔ Última etiqueta impresa — lista para el siguiente paquete.</div>`;
+    <div class="hint" style="text-align:center;margin-top:6px;">${p.pendienteAsignar? '⚠ Este paquete todavía no tiene cliente asignado.' : '✔ Última etiqueta impresa — lista para el siguiente paquete.'}</div>`;
 }
 
 /* =========================================================================
    DETALLE / EDICIÓN DE PAQUETE
    ========================================================================= */
-function abrirDetallePaquete(codigoBodega, enfocarMover){
+function abrirDetallePaquete(codigoBodega, enfocarMover, enfocarCliente){
   const p = state.paquetes.find(x=>x.codigoBodega===codigoBodega);
   if(!p) return;
   const vol = (p.largo&&p.ancho&&p.alto) ? (p.largo*p.ancho*p.alto)/166 : null;
@@ -1276,12 +1416,13 @@ function abrirDetallePaquete(codigoBodega, enfocarMover){
   const soloLectura = !!state.previewAgencia;
   document.getElementById('paqueteDetalleContent').innerHTML = `
     <h3>Paquete <span class="tk">${p.codigoBodega}</span> <span class="close" onclick="closeModal('modalPaquete')">✕</span></h3>
+    ${p.pendienteAsignar? '<div class="warnbox show">⚠ Este paquete se ingresó con la máquina y todavía no tiene cliente asignado.</div>' : ''}
     <div class="grid2">
       <div>
         <div class="card" style="box-shadow:none;border-color:var(--border-soft);margin-bottom:14px;" id="infoGeneralBox">
           <h3 style="font-size:13px;">Información general ${soloLectura?'':'<button class="btn ghost sm" id="btnEditarPaquete">Editar</button>'}</h3>
           <div id="infoGeneralView" style="font-size:12.5px;line-height:2;color:var(--ink-dim);">
-            <div><b style="color:var(--ink);">Cliente:</b> ${p.cliente} (${p.casillero})</div>
+            <div><b style="color:var(--ink);">Cliente:</b> ${p.pendienteAsignar? '<span class="badge amber">⚠ Sin asignar</span>' : p.cliente+' ('+p.casillero+')'}</div>
             <div><b style="color:var(--ink);">Agencia:</b> ${p.agencia}</div>
             <div><b style="color:var(--ink);">Consolidado:</b> ${p.consolidado} · ${p.servicio}</div>
             <div><b style="color:var(--ink);">Tracking de origen:</b> ${p.tracking}</div>
@@ -1309,9 +1450,10 @@ function abrirDetallePaquete(codigoBodega, enfocarMover){
   if(!soloLectura){
     document.getElementById('btnEditarPaquete').addEventListener('click', ()=>mostrarEdicionPaquete(p));
     if(enfocarMover) mostrarEdicionPaquete(p, true);
+    if(enfocarCliente) mostrarEdicionPaquete(p, false, true);
   }
 }
-function mostrarEdicionPaquete(p, enfocarConsolidado){
+function mostrarEdicionPaquete(p, enfocarConsolidado, enfocarCliente){
   const view = document.getElementById('infoGeneralView');
   view.innerHTML = `
     <div class="field"><label>Peso real (lbs)</label><input type="number" step="0.01" class="mono" id="editPeso" value="${p.peso}"></div>
@@ -1320,11 +1462,11 @@ function mostrarEdicionPaquete(p, enfocarConsolidado){
       <div class="field"><label>Ancho (in)</label><input type="number" step="0.1" class="mono" id="editAncho" value="${p.ancho||''}"></div>
       <div class="field"><label>Alto (in)</label><input type="number" step="0.1" class="mono" id="editAlto" value="${p.alto||''}"></div>
     </div>
-    <div class="field ac-wrap">
-      <label>Cliente</label>
-      <input type="text" id="editCliente" placeholder="Escriba para cambiar de cliente…" autocomplete="off">
+    <div class="field ac-wrap" ${enfocarCliente?'style="border:2px solid var(--accent);border-radius:8px;padding:8px;"':''}>
+      <label>Cliente ${p.pendienteAsignar?'<span class="badge amber">⚠ Sin asignar — obligatorio</span>':''}</label>
+      <input type="text" id="editCliente" placeholder="Escriba el nombre o casillero…" autocomplete="off">
       <div class="ac-list" id="acEditCliente"></div>
-      <div class="hint">Actual: <b>${p.cliente}</b> (${p.casillero})</div>
+      <div class="hint">Actual: <b>${p.pendienteAsignar? 'sin asignar' : p.cliente+' ('+p.casillero+')'}</b></div>
     </div>
     <div class="field" ${enfocarConsolidado?'style="border:2px solid var(--accent);border-radius:8px;padding:8px;"':''}>
       <label>Mover a otro consolidado</label>
@@ -1337,6 +1479,7 @@ function mostrarEdicionPaquete(p, enfocarConsolidado){
   let nuevoClienteTmp = null;
   const editCliente = document.getElementById('editCliente');
   const acEdit = document.getElementById('acEditCliente');
+  if(enfocarCliente) setTimeout(()=>editCliente.focus(), 50);
   editCliente.addEventListener('input', ()=>{
     const q = editCliente.value.trim().toLowerCase();
     if(!q){ acEdit.classList.remove('show'); return; }
@@ -1356,7 +1499,10 @@ function mostrarEdicionPaquete(p, enfocarConsolidado){
     p.largo = parseFloat(document.getElementById('editLargo').value)||p.largo;
     p.ancho = parseFloat(document.getElementById('editAncho').value)||p.ancho;
     p.alto = parseFloat(document.getElementById('editAlto').value)||p.alto;
-    if(nuevoClienteTmp && nuevoClienteTmp.nombre!==p.cliente){ cambios.push('cliente '+p.cliente+'→'+nuevoClienteTmp.nombre); p.cliente=nuevoClienteTmp.nombre; p.casillero=nuevoClienteTmp.casillero; }
+    if(nuevoClienteTmp && nuevoClienteTmp.nombre!==p.cliente){
+      cambios.push('cliente '+(p.cliente||'sin asignar')+'→'+nuevoClienteTmp.nombre);
+      p.cliente=nuevoClienteTmp.nombre; p.casillero=nuevoClienteTmp.casillero; p.pendienteAsignar=false;
+    }
     const nuevoCons = document.getElementById('editConsolidado').value;
     if(nuevoCons!==p.consolidado){
       const consNuevo = state.consolidados.find(c=>c.id===nuevoCons);
@@ -1374,7 +1520,7 @@ function mostrarEdicionPaquete(p, enfocarConsolidado){
    ========================================================================= */
 function refreshRevisionFilters(){
   document.getElementById('revConsolidado').innerHTML = '<option value="">Consolidado: todos</option>' + state.consolidados.map(c=>`<option value="${c.id}">${c.id}</option>`).join('');
-  document.getElementById('revAgencia').innerHTML = '<option value="">Agencia: todas</option>' + AGENCIAS.map(a=>`<option value="${a}">${a}</option>`).join('');
+  document.getElementById('revAgencia').innerHTML = '<option value="">Agencia: todas</option>' + todasAgenciasIncluyendoIntelliship().map(a=>`<option value="${a}">${a}</option>`).join('');
 }
 function renderRevision(){
   refreshRevisionFilters();
@@ -1385,7 +1531,7 @@ function renderRevision(){
   const fUbic = document.getElementById('revUbic').value;
   const fAgencia = state.previewAgencia || document.getElementById('revAgencia').value;
   let rows = state.paquetes.filter(p=>{
-    if(q && !(p.codigoBodega.toLowerCase().includes(q)||p.tracking.toLowerCase().includes(q)||p.cliente.toLowerCase().includes(q))) return false;
+    if(q && !(p.codigoBodega.toLowerCase().includes(q)||p.tracking.toLowerCase().includes(q)||(p.cliente||'').toLowerCase().includes(q))) return false;
     if(fCons && p.consolidado!==fCons) return false;
     if(fServ && p.servicio!==fServ) return false;
     if(fFact==='si' && !p.facturado) return false;
@@ -1396,7 +1542,7 @@ function renderRevision(){
     return true;
   });
   const orden = document.getElementById('revOrden').value;
-  if(orden==='cliente') rows.sort((a,b)=>a.cliente.localeCompare(b.cliente));
+  if(orden==='cliente') rows.sort((a,b)=>(a.cliente||'zzz').localeCompare(b.cliente||'zzz'));
   else if(orden==='peso') rows.sort((a,b)=>b.peso-a.peso);
   else if(orden==='wr') rows.sort((a,b)=>a.codigoBodega.localeCompare(b.codigoBodega));
   else if(orden==='status') rows.sort((a,b)=>a.status.localeCompare(b.status));
@@ -1405,7 +1551,7 @@ function renderRevision(){
   tbody.innerHTML = rows.length ? rows.slice(0,100).map(p=>`
     <tr class="clickable" data-wr="${p.codigoBodega}">
       <td class="tk">${p.codigoBodega}<div class="tk2">${p.tracking}</div></td>
-      <td>${p.cliente}</td>
+      <td>${p.pendienteAsignar? '<span class="badge amber">⚠ Sin asignar</span>' : p.cliente}</td>
       <td><span class="badge teal">${p.consolidado}</span></td><td>${p.servicio}</td>
       <td>${p.agencia==='INTELLISHIP'?'<span class="badge mute">INTELLISHIP</span>':'<span class="badge purple">'+p.agencia+'</span>'}</td>
       <td class="mono">${fmtL(p.peso)}</td>
@@ -1613,7 +1759,7 @@ function renderPagos(){
   el.innerHTML = pend.length ? pend.map(t=>`
     <div class="card" style="margin-bottom:14px;">
       <div style="display:flex;justify-content:space-between;">
-        <div><b>${t.cliente}</b><br><span style="color:var(--ink-mute);font-size:12px;">${t.fecha}</span></div>
+        <div><b>${t.cliente}</b> ${t.agencia?'<span class="badge purple">Agencia</span>':''}<br><span style="color:var(--ink-mute);font-size:12px;">${t.fecha}</span></div>
         <div class="mono" style="font-size:19px;color:var(--accent-dark);font-weight:700;">${money(t.monto)}</div>
       </div>
       <button class="btn ghost sm" style="margin-top:8px;" data-verfoto="${t.comprobante}">🧾 Ver comprobante adjunto</button>
@@ -1667,6 +1813,7 @@ document.querySelectorAll('.pillnav .p[data-facttab]').forEach(p=>{
     document.querySelectorAll('.pillnav .p[data-facttab]').forEach(x=>x.classList.remove('active')); p.classList.add('active');
     document.getElementById('facttab-cliente').style.display = p.dataset.facttab==='cliente'?'block':'none';
     document.getElementById('facttab-interna').style.display = p.dataset.facttab==='interna'?'block':'none';
+    document.getElementById('facttab-agencia').style.display = p.dataset.facttab==='agencia'?'block':'none';
   });
 });
 ['factBuscar','factDesde','factHasta'].forEach(id=>document.getElementById(id).addEventListener('input', renderFacturas));
@@ -1685,6 +1832,16 @@ function esFacturaMixta(f){
   return servicios.size>1;
 }
 function renderFacturas(){
+  const esAgencia = !!state.previewAgencia;
+  const vistaNormal = document.getElementById('facturasVistaNormal');
+  const vistaAgencia = document.getElementById('facturasVistaAgenciaPortal');
+  if(vistaNormal) vistaNormal.style.display = esAgencia ? 'none' : 'block';
+  if(vistaAgencia) vistaAgencia.style.display = esAgencia ? 'block' : 'none';
+  const sub = document.getElementById('facturasSub');
+  if(sub) sub.textContent = esAgencia ? 'Facturas que INTELLISHIP le emite a su agencia por los paquetes manejados. Solo se acepta pago por transferencia.' : 'El cliente genera su factura en la app. Aquí se confirma qué facturó, y se puede facturar internamente si el cliente no puede hacerlo.';
+  if(esAgencia){ renderFacturasVistaAgencia(); return; }
+  renderFacturaAgenciaTab();
+  renderFacturasAgenciaLista();
   let clientes = state.facturas.filter(f=>f.origen==='cliente');
   const q = (document.getElementById('factBuscar').value||'').trim().toLowerCase();
   const desde = document.getElementById('factDesde').value;
@@ -1773,6 +1930,16 @@ function tarifaParaPaquete(p, cli){
   }
   return {monto: usd*cfg.tipoCambio, detalle};
 }
+function tarifaParaPaqueteAgencia(p, agenciaNombre){
+  const cfg = state.configuracion;
+  const ag = getAgenciaData(agenciaNombre);
+  const t = ag ? ag.tarifa : {};
+  let usd;
+  if(p.servicio==='Express') usd = p.peso*(t?.express||cfg.express);
+  else if(p.servicio==='Standard') usd = p.peso*(t?.standard||cfg.standard);
+  else usd = p.peso*(t?.maritimo || tarifaMaritimoBase(p.peso));
+  return {monto: usd*cfg.tipoCambio, detalle: fmtL(p.peso)};
+}
 function mostrarFacturaInterna(clienteId){
   const cli = state.clientes.find(c=>c.id===clienteId);
   const listos = state.paquetes.filter(p=>p.casillero===cli.casillero && !p.facturado);
@@ -1804,8 +1971,105 @@ function mostrarFacturaInterna(clienteId){
 }
 
 /* =========================================================================
-   DESPACHO DE HOY
+   FACTURACIÓN A AGENCIAS (solo por transferencia)
    ========================================================================= */
+function estadoPagoFacturaAgencia(f){
+  const t = state.transferencias.find(x=>x.id===f.transferenciaId);
+  if(f.estado==='pendiente_pago') return {texto:'Pendiente de que la agencia pague', ok:false, color:'amber'};
+  if(!t) return {texto:'Pendiente de comprobante', ok:false, color:'amber'};
+  if(t.estado==='pendiente') return {texto:'Comprobante subido — esperando aprobación en Pagos', ok:false, color:'amber'};
+  if(t.estado==='aprobado') return {texto:'Pagada (transferencia aprobada)', ok:true, color:'green'};
+  return {texto:'Transferencia declinada — la agencia debe reintentar', ok:false, color:'red'};
+}
+function refrescarSelectAgenciaFacturar(){
+  const sel = document.getElementById('selAgenciaFacturar');
+  if(!sel) return;
+  const actual = sel.value;
+  sel.innerHTML = nombresAgencias().map(a=>`<option>${a}</option>`).join('');
+  if(nombresAgencias().includes(actual)) sel.value = actual;
+}
+function renderFacturaAgenciaTab(){
+  refrescarSelectAgenciaFacturar();
+  const sel = document.getElementById('selAgenciaFacturar');
+  if(!sel || !sel.value) return;
+  mostrarFacturaAgenciaDetalle(sel.value);
+}
+function mostrarFacturaAgenciaDetalle(agenciaNombre){
+  const listos = state.paquetes.filter(p=>p.agencia===agenciaNombre && !p.facturado && !p.pendienteAsignar);
+  const el = document.getElementById('facturaAgenciaDetalle');
+  if(!el) return;
+  if(!listos.length){ el.innerHTML = `<div class="empty" style="margin-top:16px;">${agenciaNombre} no tiene paquetes pendientes de facturar.</div>`; return; }
+  el.innerHTML = `<div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border);">
+      <div style="margin-top:12px;">${listos.map(p=>{ const t=tarifaParaPaqueteAgencia(p,agenciaNombre);
+          return `<label class="permrow" style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border-soft);">
+            <input type="checkbox" class="check facAgenciaChk" data-wr="${p.codigoBodega}" checked>
+            <span style="flex:1;"><span class="tk">${p.codigoBodega}</span> · ${p.cliente||'sin asignar'} · ${p.servicio} · ${t.detalle}</span>
+            <span class="mono" style="font-weight:700;">${money(t.monto)}</span></label>`; }).join('')}
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;">
+        <span style="font-weight:700;">Total seleccionado: <span class="mono" id="facAgenciaTotal"></span></span>
+        <button class="btn primary" id="btnGenerarFacturaAgencia">Generar factura a la agencia</button>
+      </div>
+      <div class="hint" style="margin-top:8px;">A las agencias solo se les acepta pago por transferencia — no se ofrece la opción de tarjeta.</div>
+    </div>`;
+  function recalc(){ let total=0; el.querySelectorAll('.facAgenciaChk:checked').forEach(chk=>{ const p=listos.find(x=>x.codigoBodega===chk.dataset.wr); total+=tarifaParaPaqueteAgencia(p,agenciaNombre).monto; }); document.getElementById('facAgenciaTotal').textContent = money(total); }
+  el.querySelectorAll('.facAgenciaChk').forEach(c=>c.addEventListener('change', recalc)); recalc();
+  document.getElementById('btnGenerarFacturaAgencia').addEventListener('click', ()=>{
+    const seleccionados = [...el.querySelectorAll('.facAgenciaChk:checked')].map(c=>c.dataset.wr);
+    if(!seleccionados.length){ toast('Seleccione al menos un paquete', true); return; }
+    let total=0; seleccionados.forEach(wr=>{ const p=listos.find(x=>x.codigoBodega===wr); total+=tarifaParaPaqueteAgencia(p,agenciaNombre).monto; p.facturado=true; });
+    state.facturasAgencia.unshift({id:uid('FAG-'), folio:'FA-'+pad(state.nextFolioAgencia++,6), agencia:agenciaNombre, fecha:new Date().toLocaleString('es-HN'), fechaTS:Date.now(),
+      paquetes:seleccionados, montoTotal:+total.toFixed(2), estado:'pendiente_pago', transferenciaId:null});
+    toast('Factura '+state.facturasAgencia[0].folio+' generada para '+agenciaNombre+' por '+money(total));
+    renderAll();
+  });
+}
+document.getElementById('selAgenciaFacturar').addEventListener('change', renderFacturaAgenciaTab);
+function renderFacturasAgenciaLista(){
+  const el = document.getElementById('facturasAgenciaLista');
+  if(!el) return;
+  el.innerHTML = state.facturasAgencia.length ? state.facturasAgencia.map(f=>{
+    const pago = estadoPagoFacturaAgencia(f);
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-soft);flex-wrap:wrap;gap:8px;">
+      <div><b class="mono">${f.folio}</b> · ${f.agencia} <span style="color:var(--ink-mute);font-size:12px;">· ${f.fecha} · ${f.paquetes.length} paquete(s)</span></div>
+      <div style="display:flex;align-items:center;gap:10px;"><span class="mono" style="font-weight:700;">${money(f.montoTotal)}</span><span class="badge ${pago.color}">${pago.texto}</span></div>
+    </div>`;
+  }).join('') : '<div class="empty">Aún no se han emitido facturas a agencias.</div>';
+}
+/* Portal de la agencia: ver y pagar sus facturas con INTELLISHIP (solo transferencia) */
+function renderFacturasVistaAgencia(){
+  const agenciaNombre = state.previewAgencia;
+  const cont = document.getElementById('facturasVistaAgenciaPortal');
+  if(!cont) return;
+  const propias = state.facturasAgencia.filter(f=>f.agencia===agenciaNombre);
+  cont.innerHTML = `<h3 style="margin-bottom:14px;">Facturas de ${agenciaNombre} con INTELLISHIP</h3>` + (propias.length ? propias.map(f=>{
+    const pago = estadoPagoFacturaAgencia(f);
+    const paq = state.paquetes.filter(p=>f.paquetes.includes(p.codigoBodega));
+    return `<div class="card" style="margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;">
+        <div><b class="mono">${f.folio}</b> <span style="color:var(--ink-mute);font-size:12px;">· ${f.fecha} · ${paq.length} paquete(s)</span></div>
+        <div class="mono" style="font-size:19px;color:var(--accent-dark);font-weight:700;">${money(f.montoTotal)}</div>
+      </div>
+      <div style="margin-top:8px;"><span class="badge ${pago.color}">${pago.texto}</span></div>
+      ${f.estado==='pendiente_pago' ? `<div style="margin-top:12px;display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="margin-bottom:0;"><label>Banco desde el que transfirieron</label>
+          <select class="mono bancoAgSel" data-id="${f.id}"><option>BAC</option><option>Ficohsa</option><option>Banpaís</option><option>Atlántida</option><option>Occidente</option></select>
+        </div>
+        <button class="btn primary sm subirComprobanteAgBtn" data-id="${f.id}">Subir comprobante y enviar a aprobación</button>
+      </div>` : ''}
+    </div>`;
+  }).join('') : '<div class="empty">Su agencia no tiene facturas con INTELLISHIP todavía.</div>');
+  cont.querySelectorAll('.subirComprobanteAgBtn').forEach(b=>b.addEventListener('click', ()=>{
+    const f = state.facturasAgencia.find(x=>x.id===b.dataset.id);
+    const banco = cont.querySelector('.bancoAgSel[data-id="'+f.id+'"]').value;
+    const trId = uid('TR-');
+    state.transferencias.push({id:trId, cliente:f.agencia+' (agencia)', agencia:f.agencia, monto:f.montoTotal, bancoSugerido:banco,
+      fecha:new Date().toLocaleString('es-HN'), comprobante:'comprobante_'+f.folio+'.jpg', estado:'pendiente'});
+    f.transferenciaId = trId; f.estado = 'en_revision';
+    toast('Comprobante enviado. Un agente de INTELLISHIP revisará el pago de '+f.folio+' en Pagos.');
+    renderAll();
+  }));
+}
 let despachoTabActual = 'oficina';
 document.querySelectorAll('.pillnav .p[data-desptab]').forEach(p=>{
   p.addEventListener('click', ()=>{
@@ -2068,7 +2332,7 @@ function renderAnalitica(){
     <div class="bar"><div class="val">${libras[i].toFixed(0)}</div><div class="fill" style="height:${(libras[i]/maxL*100)}%;background:${colores[i]};"></div><div class="lbl">${s}</div></div>`).join('');
 
   const porAgencia = {};
-  AGENCIAS.forEach(a=>porAgencia[a]=state.paquetes.filter(p=>p.agencia===a).length);
+  todasAgenciasIncluyendoIntelliship().forEach(a=>porAgencia[a]=state.paquetes.filter(p=>p.agencia===a).length);
   const maxA = Math.max(...Object.values(porAgencia),1);
   document.getElementById('barAgencias').innerHTML = Object.entries(porAgencia).map(([a,n])=>`
     <div class="heatrow"><div class="hn">${a}</div><div class="hbar"><i style="width:${(n/maxA*100)}%;"></i></div><div class="hv">${n}</div></div>`).join('');
@@ -2106,7 +2370,6 @@ function renderNuevoUsuarioPerms(rolPreset){
   document.getElementById('nuevoUsuarioPerms').innerHTML = MODULOS.map(m=>`<label class="permrow"><input type="checkbox" class="check permChk" value="${m.key}" ${permitido.includes(m.key)?'checked':''}> ${m.label}</label>`).join('');
   document.getElementById('campoAgenciaUsuario').style.display = rolPreset==='Agencia' ? 'block' : 'none';
 }
-document.getElementById('nuevoUsuarioAgencia').innerHTML = AGENCIAS.slice(1).map(a=>`<option>${a}</option>`).join('');
 renderNuevoUsuarioPerms('Bodega Miami');
 document.getElementById('nuevoUsuarioRol').addEventListener('change', (e)=>renderNuevoUsuarioPerms(e.target.value));
 document.getElementById('btnCrearUsuario').addEventListener('click', ()=>{
@@ -2122,6 +2385,10 @@ document.getElementById('btnCrearUsuario').addEventListener('click', ()=>{
   toast('Usuario '+nombre+' creado con rol '+rol); renderUsuarios();
 });
 function renderUsuarios(){
+  const selAgUsuario = document.getElementById('nuevoUsuarioAgencia');
+  const valorPrevio = selAgUsuario.value;
+  selAgUsuario.innerHTML = nombresAgencias().map(a=>`<option>${a}</option>`).join('');
+  if(nombresAgencias().includes(valorPrevio)) selAgUsuario.value = valorPrevio;
   const chipClass = (rol)=> rol==='Master'?'master':(rol.includes('Bodega')?'bodega':(rol==='Agencia'?'agencia':'coord'));
   document.getElementById('usuariosBody').innerHTML = state.usuarios.map(u=>`
     <tr>
@@ -2142,8 +2409,65 @@ function renderUsuarios(){
 }
 
 /* =========================================================================
-   CONFIGURACIÓN (tarifas por defecto y tipo de cambio — solo Master)
+   AGENCIAS
    ========================================================================= */
+function renderAgencias(){
+  const body = document.getElementById('agenciasBody');
+  if(!body) return;
+  body.innerHTML = agenciasData.map(a=>{
+    const t = a.tarifa||{};
+    const resumenTarifa = (t.express||t.standard||t.maritimo) ? 'Personalizada' : 'Tarifa base de INTELLISHIP';
+    return `<tr class="clickable agenciaRow" data-nombre="${a.nombre}">
+      <td><b>${a.nombre}</b></td><td class="mono">${a.whatsapp}</td><td>${a.correo}</td>
+      <td><span class="badge ${resumenTarifa==='Personalizada'?'teal':'mute'}">${resumenTarifa}</span></td>
+      <td><button class="btn ghost sm editarAgenciaBtn" data-nombre="${a.nombre}">Editar</button></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="5"><div class="empty">Sin agencias registradas.</div></td></tr>';
+  document.querySelectorAll('.editarAgenciaBtn, .agenciaRow').forEach(el=>el.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    mostrarEdicionAgencia(el.dataset.nombre);
+  }));
+}
+function mostrarEdicionAgencia(nombre){
+  const a = getAgenciaData(nombre);
+  if(!a) return;
+  const t = a.tarifa||{};
+  const cfg = state.configuracion;
+  document.getElementById('agenciaTarifaEdit').innerHTML = `
+    <div style="font-weight:700;margin-bottom:10px;">${a.nombre}</div>
+    <div class="field"><label>WhatsApp de gerencia</label><input type="text" id="editAgWhatsapp" value="${a.whatsapp}"></div>
+    <div class="field"><label>Correo de gerencia</label><input type="email" id="editAgCorreo" value="${a.correo}"></div>
+    <div class="row3">
+      <div class="field" style="margin-bottom:0;"><label>Express (base $${cfg.express})</label><input type="number" step="0.01" class="mono" id="editAgExpress" value="${t.express||''}" placeholder="usar base"></div>
+      <div class="field" style="margin-bottom:0;"><label>Standard (base $${cfg.standard})</label><input type="number" step="0.01" class="mono" id="editAgStandard" value="${t.standard||''}" placeholder="usar base"></div>
+      <div class="field" style="margin-bottom:0;"><label>Marítimo</label><input type="number" step="0.01" class="mono" id="editAgMaritimo" value="${t.maritimo||''}" placeholder="vacío = escalonado"></div>
+    </div>
+    <div class="hint">Deje los campos vacíos para usar la tarifa base de INTELLISHIP configurada en el módulo Configuración.</div>
+    <button class="btn primary sm" id="btnGuardarAgencia" style="width:100%;margin-top:10px;">Guardar cambios</button>
+  `;
+  document.getElementById('btnGuardarAgencia').addEventListener('click', ()=>{
+    a.whatsapp = document.getElementById('editAgWhatsapp').value.trim();
+    a.correo = document.getElementById('editAgCorreo').value.trim();
+    const express = parseFloat(document.getElementById('editAgExpress').value);
+    const standard = parseFloat(document.getElementById('editAgStandard').value);
+    const maritimo = parseFloat(document.getElementById('editAgMaritimo').value);
+    a.tarifa = {};
+    if(express) a.tarifa.express = express;
+    if(standard) a.tarifa.standard = standard;
+    if(maritimo) a.tarifa.maritimo = maritimo;
+    toast('Agencia '+a.nombre+' actualizada'); renderAll();
+  });
+}
+document.getElementById('btnAgregarAgencia').addEventListener('click', ()=>{
+  const nombre = document.getElementById('nuevaAgenciaNombre').value.trim().toUpperCase();
+  const whatsapp = document.getElementById('nuevaAgenciaWhatsapp').value.trim();
+  const correo = document.getElementById('nuevaAgenciaCorreo').value.trim();
+  if(!nombre){ toast('Escriba el nombre de la agencia', true); return; }
+  if(agenciasData.find(a=>a.nombre===nombre) || nombre==='INTELLISHIP'){ toast('Esa agencia ya existe', true); return; }
+  agenciasData.push({nombre, whatsapp: whatsapp||'—', correo: correo||'—', tarifa:{}});
+  document.getElementById('nuevaAgenciaNombre').value=''; document.getElementById('nuevaAgenciaWhatsapp').value=''; document.getElementById('nuevaAgenciaCorreo').value='';
+  toast('Agencia '+nombre+' agregada'); renderAll();
+});
 function renderConfiguracion(){
   const view = document.getElementById('v-configuracion');
   if(!view || !view.classList.contains('active')) { actualizarEjemploConfig(); return; }
@@ -2206,6 +2530,7 @@ function renderAll(){
   renderReportes();
   renderNotif();
   renderUsuarios();
+  renderAgencias();
   renderConfiguracion();
   document.getElementById('navCountPaq').textContent = state.paquetes.filter(p=>!p.facturado).length;
 }
